@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>THE LIVING HISTORY: BẠCH ĐẰNG 938 - MUSEUM EXPERIENCE</title>
+
+    <!-- FONTS -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&family=Roboto+Mono:wght@300&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- LIBRARIES (CDN High Availability) -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+      /* --- MODULE: CSS & UI DESIGN --- */
+      :root {
+        --museum-gold: #c5a059;
+        --museum-dark: #0b0d10;
+        --museum-glass: rgba(20, 25, 35, 0.85);
+        --text-main: #e0e0e0;
+        --hologram-cyan: #00f3ff;
+        --alert-red: #8a1c1c;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        user-select: none;
+      }
+      body {
+        overflow: hidden;
+        background: #000;
+        font-family: "Playfair Display", serif;
+        color: var(--text-main);
+      }
+
+      #canvas-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1;
+      }
+      #ui-root {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      /* UTILITIES */
+      .pointer-active {
+        pointer-events: auto !important;
+      }
+      .hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .fade-in {
+        animation: fadeIn 1s forwards;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* HUD ELEMENTS */
+      .crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--museum-gold);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.2s;
+        z-index: 20;
+      }
+      .crosshair.active {
+        width: 40px;
+        height: 40px;
+        background: transparent;
+        border: 2px solid var(--museum-gold);
+      }
+
+      .interaction-text {
+        position: absolute;
+        top: 55%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        font-family: "Cinzel", serif;
+        font-size: 1.2rem;
+        color: var(--museum-gold);
+        text-shadow: 0 2px 10px black;
+        opacity: 0;
+        transition: opacity 0.3s;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 5px 15px;
+        border-radius: 4px;
+        border: 1px solid rgba(197, 160, 89, 0.3);
+      }
+      .interaction-text.visible {
+        opacity: 1;
+      }
+
+      /* MUSEUM PANELS */
+      .museum-panel {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 800px;
+        max-width: 90%;
+        background: var(--museum-glass);
+        border: 1px solid var(--museum-gold);
+        backdrop-filter: blur(15px);
+        padding: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        color: #fff;
+      }
+      .panel-title {
+        font-family: "Cinzel", serif;
+        font-size: 2.5rem;
+        color: var(--museum-gold);
+        text-align: center;
+        border-bottom: 1px solid #444;
+        padding-bottom: 1rem;
+      }
+      .panel-desc {
+        font-family: "Roboto Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: #aaa;
+        text-align: justify;
+      }
+
+      .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .choice-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #555;
+        color: #ddd;
+        padding: 1.5rem;
+        cursor: pointer;
+        font-family: "Cinzel", serif;
+        transition: all 0.3s;
+        text-align: center;
+      }
+      .choice-btn:hover {
+        background: rgba(197, 160, 89, 0.2);
+        border-color: var(--museum-gold);
+      }
+      .choice-btn.selected {
+        background: var(--museum-gold);
+        color: #000;
+        font-weight: bold;
+      }
+
+      .btn-action {
+        padding: 1rem 3rem;
+        background: transparent;
+        border: 2px solid var(--museum-gold);
+        color: var(--museum-gold);
+        font-family: "Cinzel", serif;
+        font-size: 1.2rem;
+        cursor: pointer;
+        align-self: center;
+        margin-top: 1rem;
+        transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .btn-action:hover {
+        background: var(--museum-gold);
+        color: #000;
+        box-shadow: 0 0 30px var(--museum-gold);
+      }
+
+      /* CINEMATIC SUBTITLES */
+      .cinematic-sub {
+        position: absolute;
+        bottom: 15%;
+        width: 100%;
+        text-align: center;
+        font-family: "Cinzel", serif;
+        font-size: 2rem;
+        color: #fff;
+        text-shadow: 0 4px 20px #000;
+        pointer-events: none;
+        opacity: 0;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        padding: 2rem 0;
+      }
+
+      /* CHAT UI */
+      .chat-overlay {
+        position: absolute;
+        bottom: 2rem;
+        right: 2rem;
+        width: 450px;
+        height: 600px;
+        background: rgba(10, 15, 20, 0.95);
+        border: 1px solid var(--hologram-cyan);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
+        transform: translateY(110%);
+        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      .chat-overlay.active {
+        transform: translateY(0);
+      }
+      .chat-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(0, 243, 255, 0.05);
+      }
+      .ngo-quyen-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--hologram-cyan);
+        box-shadow: 0 0 15px var(--hologram-cyan);
+        position: relative;
+        overflow: hidden;
+      }
+      .chat-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .msg {
+        max-width: 85%;
+        padding: 1rem;
+        border-radius: 4px;
+        line-height: 1.5;
+        font-size: 0.95rem;
+      }
+      .msg.ai {
+        align-self: flex-start;
+        background: rgba(0, 243, 255, 0.1);
+        color: #d0ffff;
+        border-left: 3px solid var(--hologram-cyan);
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: rgba(197, 160, 89, 0.15);
+        color: var(--museum-gold);
+        border-right: 3px solid var(--museum-gold);
+      }
+      .chat-input-area {
+        padding: 1.5rem;
+        border-top: 1px solid #333;
+        display: flex;
+        gap: 10px;
+      }
+      .chat-input {
+        flex: 1;
+        background: transparent;
+        border: 1px solid #555;
+        padding: 0.8rem;
+        color: #fff;
+        font-family: "Playfair Display", serif;
+      }
+      .chat-input:focus {
+        outline: none;
+        border-color: var(--hologram-cyan);
+      }
+
+      /* START SCREEN */
+      .start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, #1a202c 0%, #000 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+      .title-main {
+        font-family: "Cinzel", serif;
+        font-size: 4rem;
+        color: var(--museum-gold);
+        text-shadow: 0 0 20px rgba(197, 160, 89, 0.5);
+        letter-spacing: 5px;
+        margin-bottom: 2rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container"></div>
+    <div id="ui-root"></div>
+
+    <script type="text/babel">
+      /*******************************************************
+       * MODULE 1: PROCEDURAL ASSETS & AUDIO
+       *******************************************************/
+
+      const AudioSys = {
+        ctx: null,
+        init: function () {
+          window.AudioContext =
+            window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        },
+        playDrone: function () {
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(50, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+        },
+        playWarDrums: function () {
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(
+            10,
+            this.ctx.currentTime + 0.5,
+          );
+          gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.01,
+            this.ctx.currentTime + 0.5,
+          );
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.5);
+        },
+      };
+
+      const TextureGen = {
+        createMarble: () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 512;
+          canvas.height = 512;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#1a1a1a";
+          ctx.fillRect(0, 0, 512, 512);
+          for (let i = 0; i < 5000; i++) {
+            ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+            ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+          }
+          ctx.strokeStyle = "rgba(255,255,255,0.1)";
+          ctx.lineWidth = 3;
+          for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * 512, 0);
+            ctx.bezierCurveTo(
+              Math.random() * 512,
+              256,
+              Math.random() * 512,
+              256,
+              Math.random() * 512,
+              512,
+            );
+            ctx.stroke();
+          }
+          const tex = new THREE.CanvasTexture(canvas);
+          tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+          return tex;
+        },
+      };
+
+      /*******************************************************
+       * MODULE 2: SHADERS (GLSL)
+       *******************************************************/
+
+      const Shaders = {
+        Water: {
+          vertex: `
+                    uniform float time;
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+                        float wave = sin(pos.x * 0.1 + time) * 0.5 + cos(pos.y * 0.1 + time * 0.8) * 0.5;
+                        pos.z += wave;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    }
+                `,
+          fragment: `
+                    uniform float time;
+                    uniform vec3 color;
+                    varying vec2 vUv;
+                    void main() {
+                        vec3 waterColor = color;
+                        float noise = sin(vUv.x * 10.0 + time) * cos(vUv.y * 10.0 + time);
+                        waterColor += noise * 0.05;
+                        float alpha = 0.8 + noise * 0.1;
+                        gl_FragColor = vec4(waterColor, alpha);
+                    }
+                `,
+        },
+        Hologram: {
+          vertex: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vViewPosition = -mvPosition.xyz;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+          fragment: `
+                    uniform float time;
+                    uniform vec3 color;
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    void main() {
+                        vec3 normal = normalize(vNormal);
+                        vec3 viewDir = normalize(vViewPosition);
+                        float dotProduct = 1.0 - dot(normal, viewDir);
+                        float rim = smoothstep(0.6, 1.0, dotProduct);
+                        float scan = sin(gl_FragCoord.y * 0.5 + time * 5.0) * 0.5 + 0.5;
+                        gl_FragColor = vec4(color, (rim + scan * 0.2) * 0.8);
+                    }
+                `,
+        },
+      };
+
+      /*******************************************************
+       * MODULE 3: GAME ENGINE (THREE.JS LOGIC)
+       *******************************************************/
+
+      class GameEngine {
+        constructor(setInteraction, setCinematicText, onPuzzleSolved) {
+          this.setInteraction = setInteraction;
+          this.setCinematicText = setCinematicText;
+          this.onPuzzleSolved = onPuzzleSolved;
+
+          this.scene = null;
+          this.camera = null;
+          this.renderer = null;
+          this.controls = null;
+
+          this.objects = [];
+          this.interactables = [];
+          this.cinematicObjects = { ships: [], stakes: [] };
+
+          this.clock = new THREE.Clock();
+          this.raycaster = new THREE.Raycaster();
+          this.mouse = new THREE.Vector2(0, 0);
+
+          // STATE: EXPLORE, UI_ACTIVE, CINEMATIC, DIALOGUE
+          this.state = "EXPLORE";
+        }
+
+        init() {
+          this.scene = new THREE.Scene();
+          this.scene.background = new THREE.Color(0x050505);
+          this.scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+          this.camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000,
+          );
+          this.camera.position.set(0, 1.7, 10);
+
+          this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+          });
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          this.renderer.shadowMap.enabled = true;
+          this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          document
+            .getElementById("canvas-container")
+            .appendChild(this.renderer.domElement);
+
+          const ambient = new THREE.AmbientLight(0xffffff, 0.1);
+          this.scene.add(ambient);
+
+          this.buildMuseum();
+          this.buildRiverScene();
+
+          this.controls = new THREE.PointerLockControls(
+            this.camera,
+            document.body,
+          );
+          this.setupInputs();
+
+          this.animate();
+        }
+
+        buildMuseum() {
+          const marbleTex = TextureGen.createMarble();
+
+          const floorGeo = new THREE.PlaneGeometry(50, 50);
+          const floorMat = new THREE.MeshStandardMaterial({
+            map: marbleTex,
+            roughness: 0.1,
+            metalness: 0.1,
+          });
+          const floor = new THREE.Mesh(floorGeo, floorMat);
+          floor.rotation.x = -Math.PI / 2;
+          floor.receiveShadow = true;
+          this.scene.add(floor);
+
+          const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            roughness: 0.8,
+          });
+          const walls = new THREE.Group();
+          const backWall = new THREE.Mesh(
+            new THREE.BoxGeometry(50, 20, 1),
+            wallMat,
+          );
+          backWall.position.set(0, 10, -25);
+          const leftWall = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 20, 50),
+            wallMat,
+          );
+          leftWall.position.set(-25, 10, 0);
+          const rightWall = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 20, 50),
+            wallMat,
+          );
+          rightWall.position.set(25, 10, 0);
+          walls.add(backWall, leftWall, rightWall);
+          this.scene.add(walls);
+
+          this.createArtifact(
+            "MAP_TABLE",
+            new THREE.Vector3(0, 0, -5),
+            "Sa Bàn Trận Địa",
+            "Nghiên cứu địa thế sông Bạch Đằng",
+          );
+
+          this.createArtifact(
+            "STAKE_CASE",
+            new THREE.Vector3(-10, 0, -10),
+            "Cọc Gỗ Bịt Sắt",
+            "Vũ khí bí mật dưới lòng sông",
+          );
+
+          this.createArtifact(
+            "SHIP_MODEL",
+            new THREE.Vector3(10, 0, -10),
+            "Thuyền Chiến Nam Hán",
+            "Phân tích điểm yếu của địch",
+          );
+
+          const ngoQuyenBase = new THREE.Mesh(
+            new THREE.CylinderGeometry(2, 2, 0.2, 32),
+            new THREE.MeshStandardMaterial({ color: 0x000 }),
+          );
+          ngoQuyenBase.position.set(0, 0, -20);
+          this.scene.add(ngoQuyenBase);
+        }
+
+        createArtifact(id, pos, label, desc) {
+          const pedestal = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 1, 2),
+            new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0.5 }),
+          );
+          pedestal.position.copy(pos);
+          pedestal.position.y = 0.5;
+          pedestal.castShadow = true;
+          pedestal.receiveShadow = true;
+          this.scene.add(pedestal);
+
+          const spot = new THREE.SpotLight(0xc5a059, 2);
+          spot.position.set(pos.x, 8, pos.z);
+          spot.target = pedestal;
+          spot.angle = 0.3;
+          spot.penumbra = 0.5;
+          spot.castShadow = true;
+          this.scene.add(spot);
+
+          let visual;
+          if (id === "MAP_TABLE") {
+            visual = new THREE.Mesh(
+              new THREE.BoxGeometry(1.8, 0.1, 1.8),
+              new THREE.MeshStandardMaterial({ color: 0x3a5f0b }),
+            );
+            visual.position.set(0, 0.55, 0);
+          } else if (id === "STAKE_CASE") {
+            visual = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8),
+              new THREE.MeshStandardMaterial({ color: 0x5c4033 }),
+            );
+            visual.position.set(0, 1.2, 0);
+          } else {
+            visual = new THREE.Mesh(
+              new THREE.BoxGeometry(1, 0.5, 2),
+              new THREE.MeshStandardMaterial({ color: 0x8a1c1c }),
+            );
+            visual.position.set(0, 1, 0);
+          }
+          pedestal.add(visual);
+
+          const hitbox = new THREE.Mesh(
+            new THREE.BoxGeometry(2.2, 2, 2.2),
+            new THREE.MeshBasicMaterial({ visible: false }),
+          );
+          hitbox.position.y = 0.5;
+          hitbox.userData = { id, label, isInteractable: true };
+          pedestal.add(hitbox);
+          this.interactables.push(hitbox);
+        }
+
+        buildRiverScene() {
+          const waterGeo = new THREE.PlaneGeometry(200, 200, 64, 64);
+          this.waterMat = new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 },
+              color: { value: new THREE.Color(0x001133) },
+            },
+            vertexShader: Shaders.Water.vertex,
+            fragmentShader: Shaders.Water.fragment,
+            transparent: true,
+            opacity: 0,
+          });
+          const water = new THREE.Mesh(waterGeo, this.waterMat);
+          water.rotation.x = -Math.PI / 2;
+          water.position.y = -50;
+          this.scene.add(water);
+          this.cinematicObjects.water = water;
+
+          const holoGeo = new THREE.CylinderGeometry(0.5, 0.5, 2.5, 16);
+          this.holoMat = new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 },
+              color: { value: new THREE.Color(0x00f3ff) },
+            },
+            vertexShader: Shaders.Hologram.vertex,
+            fragmentShader: Shaders.Hologram.fragment,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+          });
+          this.ngoQuyen = new THREE.Mesh(holoGeo, this.holoMat);
+          this.ngoQuyen.position.set(0, -10, -20);
+          this.scene.add(this.ngoQuyen);
+
+          const talkHitbox = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 4, 2),
+            new THREE.MeshBasicMaterial({ visible: false }),
+          );
+          talkHitbox.position.copy(this.ngoQuyen.position);
+          talkHitbox.userData = {
+            id: "NGO_QUYEN",
+            label: "Ngô Quyền",
+            isInteractable: false,
+          };
+          this.ngoQuyen.add(talkHitbox);
+          this.interactables.push(talkHitbox);
+        }
+
+        setupInputs() {
+          this.keys = { w: false, a: false, s: false, d: false };
+          document.addEventListener("keydown", (e) => this.onKey(e, true));
+          document.addEventListener("keyup", (e) => this.onKey(e, false));
+
+          // IMPORTANT: Only lock if clicking on Canvas and state is EXPLORE
+          document.addEventListener("click", (e) => {
+            // Check if click target is inside UI elements
+            if (
+              e.target.closest(".museum-panel") ||
+              e.target.closest(".chat-overlay") ||
+              e.target.closest(".start-screen")
+            ) {
+              return;
+            }
+            if (this.state === "EXPLORE") {
+              this.controls.lock();
+            }
+          });
+        }
+
+        onKey(e, pressed) {
+          switch (e.code) {
+            case "KeyW":
+              this.keys.w = pressed;
+              break;
+            case "KeyA":
+              this.keys.a = pressed;
+              break;
+            case "KeyS":
+              this.keys.s = pressed;
+              break;
+            case "KeyD":
+              this.keys.d = pressed;
+              break;
+          }
+        }
+
+        startCinematic() {
+          this.state = "CINEMATIC";
+          this.controls.unlock();
+          AudioSys.playWarDrums();
+
+          const tl = gsap.timeline();
+          tl.to(this.scene.fog, { density: 0.05, duration: 2 });
+          tl.to(
+            this.camera.position,
+            { y: 15, z: 20, duration: 3, ease: "power2.inOut" },
+            0,
+          );
+          tl.to(this.cinematicObjects.water.position, { y: 1, duration: 2 }, 1);
+          tl.call(
+            () =>
+              this.setCinematicText(
+                "Năm 938... Quân Nam Hán hùng hổ tiến vào cửa sông Bạch Đằng...",
+              ),
+            null,
+            2,
+          );
+          tl.call(() => this.spawnShips(), null, 3);
+          tl.call(
+            () =>
+              this.setCinematicText(
+                "Chúng cậy thuyền to, coi thường thế trận của ta...",
+              ),
+            null,
+            6,
+          );
+          tl.call(() => this.spawnStakes(), null, 9);
+          tl.call(
+            () => this.setCinematicText("NHƯNG CỌC GỖ ĐÃ ĐỢI SẴN!"),
+            null,
+            9.5,
+          );
+          tl.call(() => this.destroyShips(), null, 12);
+          tl.call(() => this.summonNgoQuyen(), null, 16);
+        }
+
+        spawnShips() {
+          const shipGeo = new THREE.BoxGeometry(3, 1.5, 6);
+          const shipMat = new THREE.MeshStandardMaterial({ color: 0x550000 });
+          for (let i = 0; i < 5; i++) {
+            const ship = new THREE.Mesh(shipGeo, shipMat);
+            ship.position.set(
+              (Math.random() - 0.5) * 40,
+              1,
+              -50 - Math.random() * 20,
+            );
+            this.scene.add(ship);
+            this.cinematicObjects.ships.push(ship);
+            gsap.to(ship.position, { z: -5, duration: 8, ease: "linear" });
+          }
+        }
+
+        spawnStakes() {
+          const stakeGeo = new THREE.ConeGeometry(0.5, 6, 8);
+          const stakeMat = new THREE.MeshStandardMaterial({ color: 0x3e2b22 });
+          for (let i = 0; i < 30; i++) {
+            const stake = new THREE.Mesh(stakeGeo, stakeMat);
+            stake.position.set(
+              (Math.random() - 0.5) * 50,
+              -5,
+              -20 + (Math.random() - 0.5) * 30,
+            );
+            this.scene.add(stake);
+            this.cinematicObjects.stakes.push(stake);
+            gsap.to(stake.position, {
+              y: 0,
+              duration: 0.5,
+              delay: Math.random(),
+            });
+          }
+        }
+
+        destroyShips() {
+          this.cinematicObjects.ships.forEach((ship, idx) => {
+            gsap.to(ship.rotation, {
+              x: 0.5,
+              z: 0.5,
+              duration: 2,
+              delay: idx * 0.5,
+            });
+            gsap.to(ship.position, {
+              y: -5,
+              duration: 4,
+              delay: 1 + idx * 0.5,
+            });
+          });
+        }
+
+        summonNgoQuyen() {
+          this.setCinematicText("");
+          this.ngoQuyen.position.set(0, 3, -10);
+          gsap.fromTo(
+            this.ngoQuyen.scale,
+            { x: 0, y: 0, z: 0 },
+            { x: 1, y: 1, z: 1, duration: 2 },
+          );
+
+          gsap.to(this.camera.position, {
+            x: 0,
+            y: 1.7,
+            z: 5,
+            duration: 3,
+            delay: 2,
+            onComplete: () => {
+              this.state = "DIALOGUE";
+              const nqHitbox = this.interactables.find(
+                (x) => x.userData.id === "NGO_QUYEN",
+              );
+              if (nqHitbox) nqHitbox.userData.isInteractable = true;
+              this.onPuzzleSolved("CINEMATIC_DONE");
+            },
+          });
+        }
+
+        animate() {
+          requestAnimationFrame(() => this.animate());
+          const delta = this.clock.getDelta();
+          const time = this.clock.getElapsedTime();
+
+          this.waterMat.uniforms.time.value = time;
+          this.holoMat.uniforms.time.value = time;
+
+          if (this.controls.isLocked) {
+            const speed = 10.0 * delta;
+            if (this.keys.w) this.controls.moveForward(speed);
+            if (this.keys.s) this.controls.moveForward(-speed);
+            if (this.keys.a) this.controls.moveRight(-speed);
+            if (this.keys.d) this.controls.moveRight(speed);
+
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const intersects = this.raycaster.intersectObjects(
+              this.interactables,
+            );
+
+            if (intersects.length > 0) {
+              const target = intersects[0].object;
+              if (target.userData.isInteractable) {
+                this.setInteraction(target.userData);
+              }
+            } else {
+              this.setInteraction(null);
+            }
+          }
+
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+
+      /*******************************************************
+       * MODULE 4: REACT UI & GAME LOGIC STATE
+       *******************************************************/
+
+      const { useState, useEffect, useRef } = React;
+
+      const PUZZLE_DATA = {
+        MAP_TABLE: {
+          title: "ĐỊA LỢI - BẠCH ĐẰNG GIANG",
+          desc: "Sông Bạch Đằng cửa biển hiểm trở, nước triều lên xuống chênh lệch rất lớn. Để chiến thắng, ta phải chọn thời điểm nào?",
+          choices: [
+            { id: "wrong1", text: "Tấn công khi nước triều lên cao nhất" },
+            { id: "correct", text: "Mai phục, đợi nước triều rút mạnh" },
+            { id: "wrong2", text: "Đánh ban đêm để che mắt địch" },
+          ],
+        },
+        STAKE_CASE: {
+          title: "VŨ KHÍ - CỌC GỖ",
+          desc: "Thuyền địch to lớn, thuyền ta nhỏ bé. Cọc gỗ phải được bố trí thế nào để tiêu diệt chiến thuyền?",
+          choices: [
+            { id: "wrong1", text: "Cắm cọc lộ thiên để uy hiếp tinh thần" },
+            { id: "wrong2", text: "Dùng cọc tre vót nhọn tẩm độc" },
+            { id: "correct", text: "Cọc gỗ lim bịt sắt, cắm ngầm dưới nước" },
+          ],
+        },
+        SHIP_MODEL: {
+          title: "CHIẾN THUẬT - NHỬ ĐỊCH",
+          desc: "Hoằng Tháo là kẻ kiêu ngạo. Làm sao để dụ hắn vào sâu trong bãi cọc?",
+          choices: [
+            { id: "correct", text: "Dùng thuyền nhẹ khiêu chiến rồi giả thua" },
+            { id: "wrong1", text: "Tổng tấn công phủ đầu ngay cửa sông" },
+            { id: "wrong2", text: "Cố thủ trong thành, đợi địch mệt mỏi" },
+          ],
+        },
+      };
+
+      const NGO_QUYEN_BRAIN = [
+        {
+          keywords: ["xin chào", "chào", "hello"],
+          response:
+            "Ta là Ngô Quyền. Ngươi từ hậu thế đến đây, có điều gì muốn hỏi về trận chiến này?",
+        },
+        {
+          keywords: ["năm 938", "thời gian"],
+          response:
+            "Năm 938 là thời khắc định mệnh. Ta đã thề rằng: Giặc Nam Hán không tan, ta quyết không trở về.",
+        },
+        {
+          keywords: ["cọc", "gỗ"],
+          response:
+            "Rừng gỗ lim ngàn năm đã giúp ta dựng trận địa. Cọc gỗ đầu bịt sắt, cắm chéo ngược dòng nước, chính là mồ chôn thuyền giặc.",
+        },
+        {
+          keywords: ["kiều công tiễn", "phản bội"],
+          response:
+            "Kẻ bán nước cầu vinh Kiều Công Tiễn đáng tội chết vạn lần. Hắn mở cửa cho sói vào nhà, ta phải trừ khử trước khi đánh giặc ngoài.",
+        },
+        {
+          keywords: ["chiến thắng", "kết quả"],
+          response:
+            "Hoằng Tháo bỏ mạng, quân Nam Hán vỡ mật. Từ nay nước Nam ta tự chủ, chấm dứt ngàn năm Bắc thuộc.",
+        },
+        {
+          keywords: ["làm sao", "cách nào", "chiến thuật"],
+          response:
+            "Biết người biết ta. Ta biết Hoằng Tháo kiêu căng, lại không thạo thủy chiến. Lợi dụng thủy triều là kế sách trời cho.",
+        },
+      ];
+
+      function App() {
+        const [hasStarted, setHasStarted] = useState(false);
+        const [interaction, setInteraction] = useState(null);
+        const [activePuzzle, setActivePuzzle] = useState(null);
+        const [solvedCount, setSolvedCount] = useState(0);
+        const [cinematicText, setCinematicText] = useState("");
+        const [showChat, setShowChat] = useState(false);
+        const [chatMessages, setChatMessages] = useState([]);
+
+        const engineRef = useRef(null);
+
+        useEffect(() => {
+          engineRef.current = new GameEngine(
+            (data) => setInteraction(data),
+            (text) => setCinematicText(text),
+            (event) => handleGameEvent(event),
+          );
+          // Engine initialized on Start
+        }, []);
+
+        const startGame = () => {
+          AudioSys.init();
+          AudioSys.playDrone();
+          engineRef.current.init();
+          engineRef.current.controls.lock();
+          setHasStarted(true);
+        };
+
+        const handleGameEvent = (event) => {
+          if (event === "CINEMATIC_DONE") {
+            setChatMessages([
+              { sender: "ai", text: "Ta đã đợi ngươi ở đây..." },
+            ]);
+            setTimeout(() => setShowChat(true), 1000);
+          }
+        };
+
+        const handleInteract = () => {
+          if (!interaction) return;
+
+          if (interaction.id === "NGO_QUYEN") {
+            engineRef.current.controls.unlock();
+            engineRef.current.state = "UI_ACTIVE";
+            setShowChat(true);
+          } else if (PUZZLE_DATA[interaction.id]) {
+            engineRef.current.controls.unlock();
+            engineRef.current.state = "UI_ACTIVE";
+            setActivePuzzle(interaction.id);
+          }
+        };
+
+        useEffect(() => {
+          const handler = (e) => {
+            if (e.code === "KeyE") handleInteract();
+          };
+          window.addEventListener("keydown", handler);
+          return () => window.removeEventListener("keydown", handler);
+        }, [interaction]);
+
+        const solvePuzzle = (isCorrect) => {
+          if (isCorrect) {
+            const newCount = solvedCount + 1;
+            setSolvedCount(newCount);
+            setActivePuzzle(null);
+
+            // Reset state before locking
+            engineRef.current.state = "EXPLORE";
+            engineRef.current.controls.lock();
+
+            if (newCount === 3) {
+              setTimeout(() => {
+                engineRef.current.startCinematic();
+              }, 1000);
+            }
+          } else {
+            AudioSys.playWarDrums();
+            alert("Sai rồi! Lịch sử không thể viết lại như vậy.");
+          }
+        };
+
+        return (
+          <>
+            {!hasStarted && (
+              <div className="start-screen pointer-active">
+                <h1 className="title-main">THE LIVING HISTORY</h1>
+                <button className="btn-action" onClick={startGame}>
+                  BƯỚC VÀO LỊCH SỬ
+                </button>
+              </div>
+            )}
+
+            {hasStarted && (
+              <>
+                <div className={`crosshair ${interaction ? "active" : ""}`} />
+
+                <div
+                  className={`interaction-text ${interaction ? "visible" : ""}`}
+                >
+                  Nhấn [E] để{" "}
+                  {interaction?.id === "NGO_QUYEN"
+                    ? "Trò chuyện"
+                    : "Nghiên cứu"}
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 20,
+                    right: 20,
+                    textAlign: "right",
+                    fontFamily: "Cinzel",
+                    color: "#c5a059",
+                  }}
+                >
+                  <h2>NHIỆM VỤ</h2>
+                  <p>Kích hoạt ký ức lịch sử: {solvedCount}/3</p>
+                </div>
+
+                {activePuzzle && (
+                  <PuzzleModal
+                    data={PUZZLE_DATA[activePuzzle]}
+                    onSolve={solvePuzzle}
+                  />
+                )}
+
+                <div
+                  className={`cinematic-sub ${cinematicText ? "fade-in" : "hidden"}`}
+                >
+                  {cinematicText}
+                </div>
+
+                <ChatInterface
+                  visible={showChat}
+                  messages={chatMessages}
+                  setMessages={setChatMessages}
+                  onClose={() => {
+                    setShowChat(false);
+                    engineRef.current.state = "EXPLORE"; // Reset state
+                    engineRef.current.controls.lock();
+                  }}
+                />
+              </>
+            )}
+          </>
+        );
+      }
+
+      function PuzzleModal({ data, onSolve }) {
+        const [selected, setSelected] = useState(null);
+
+        const checkAnswer = (e) => {
+          e.stopPropagation(); // Stop click from reaching Three.js
+          if (!selected) return;
+          onSolve(selected === "correct");
+        };
+
+        return (
+          <div
+            className="museum-panel pointer-active"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h1 className="panel-title">{data.title}</h1>
+            <p className="panel-desc">{data.desc}</p>
+
+            <div className="choice-grid">
+              {data.choices.map((c) => (
+                <div
+                  key={c.id}
+                  className={`choice-btn ${selected === c.id ? "selected" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelected(c.id);
+                  }}
+                >
+                  {c.text}
+                </div>
+              ))}
+            </div>
+
+            <button className="btn-action" onClick={checkAnswer}>
+              XÁC NHẬN
+            </button>
+          </div>
+        );
+      }
+
+      function ChatInterface({ visible, messages, setMessages, onClose }) {
+        const [input, setInput] = useState("");
+        const bodyRef = useRef(null);
+
+        useEffect(() => {
+          if (bodyRef.current)
+            bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+        }, [messages]);
+
+        const handleSend = () => {
+          if (!input.trim()) return;
+
+          const userText = input;
+          setMessages((prev) => [...prev, { sender: "user", text: userText }]);
+          setInput("");
+
+          setTimeout(() => {
+            const lowerInput = userText.toLowerCase();
+            let response =
+              "Ta không hiểu ý ngươi. Hãy hỏi về trận chiến, cọc gỗ, hoặc giặc Nam Hán.";
+
+            for (let entry of NGO_QUYEN_BRAIN) {
+              if (entry.keywords.some((kw) => lowerInput.includes(kw))) {
+                response = entry.response;
+                break;
+              }
+            }
+            setMessages((prev) => [...prev, { sender: "ai", text: response }]);
+          }, 800);
+        };
+
+        return (
+          <div
+            className={`chat-overlay pointer-active ${visible ? "active" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="chat-header">
+              <div className="ngo-quyen-avatar"></div>
+              <div
+                style={{
+                  color: "#00f3ff",
+                  fontFamily: "Cinzel",
+                  fontWeight: "bold",
+                }}
+              >
+                NGÔ QUYỀN (KÝ ỨC)
+              </div>
+              <div
+                style={{ marginLeft: "auto", cursor: "pointer", color: "#fff" }}
+                onClick={onClose}
+              >
+                ✖
+              </div>
+            </div>
+
+            <div className="chat-body" ref={bodyRef}>
+              {messages.map((m, i) => (
+                <div key={i} className={`msg ${m.sender}`}>
+                  {m.text}
+                </div>
+              ))}
+            </div>
+
+            <div className="chat-input-area">
+              <input
+                className="chat-input"
+                placeholder="Hỏi Ngô Quyền..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              />
+              <button
+                style={{
+                  background: "var(--museum-gold)",
+                  border: "none",
+                  padding: "0 1rem",
+                  cursor: "pointer",
+                }}
+                onClick={handleSend}
+              >
+                GỬI
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("ui-root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
