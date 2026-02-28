@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Khám phá Nhã Nhạc Cung Đình Huế - 3D Experience</title>
+    <link rel="shortcut icon" href="../../favicon.svg" type="image/x-icon" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;700&display=swap");
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000;
+        font-family: "Roboto", sans-serif;
+        user-select: none;
+      }
+      h1,
+      h2,
+      h3,
+      .royal-font {
+        font-family: "Playfair Display", serif;
+      }
+
+      #game-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      /* UI Overlays */
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 6px;
+        height: 6px;
+        background-color: rgba(255, 215, 0, 0.8);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.2s;
+      }
+      #crosshair.active {
+        width: 12px;
+        height: 12px;
+        background-color: #fff;
+        box-shadow: 0 0 10px #ffd700;
+      }
+
+      #tooltip {
+        position: absolute;
+        top: 55%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #ffd700;
+        text-shadow: 1px 1px 3px #000;
+        font-size: 18px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 4px 12px;
+        border-radius: 4px;
+        border: 1px solid #ffd700;
+      }
+
+      #quest-tracker {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(20, 10, 5, 0.8);
+        border: 1px solid #8b0000;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+        pointer-events: auto;
+      }
+
+      /* Start Screen */
+      #blocker {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: auto;
+      }
+
+      /* Modals */
+      .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 40;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        pointer-events: auto;
+        backdrop-filter: blur(5px);
+      }
+      .modal-content {
+        background: linear-gradient(135deg, #2a0800 0%, #1a0500 100%);
+        border: 2px solid #ffd700;
+        box-shadow:
+          0 0 30px rgba(255, 215, 0, 0.2),
+          inset 0 0 20px rgba(0, 0, 0, 0.8);
+        width: 80%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: #e0d0b0;
+        padding: 30px;
+        border-radius: 4px;
+        position: relative;
+      }
+
+      /* Timeline specific */
+      .timeline-item {
+        border-left: 2px solid #ffd700;
+        padding-left: 20px;
+        position: relative;
+        margin-bottom: 20px;
+      }
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        background: #8b0000;
+        border: 2px solid #ffd700;
+        border-radius: 50%;
+      }
+
+      /* 3D CSS Models for Instruments */
+      .css-3d-container {
+        perspective: 800px;
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+      }
+      .css-model {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        transform-style: preserve-3d;
+        animation: spin 8s infinite linear;
+      }
+      @keyframes spin {
+        from {
+          transform: rotateY(0deg);
+        }
+        to {
+          transform: rotateY(360deg);
+        }
+      }
+      .drum-face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: #8b0000;
+        border: 4px solid #ffd700;
+      }
+      .drum-side {
+        position: absolute;
+        width: 100%;
+        height: 40px;
+        background: #5c4033;
+        top: 20px;
+        transform: rotateX(90deg);
+      }
+      .lute-body {
+        position: absolute;
+        width: 60px;
+        height: 80px;
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        background: #5c4033;
+        border: 2px solid #ffd700;
+        left: 10px;
+      }
+      .lute-neck {
+        position: absolute;
+        width: 10px;
+        height: 60px;
+        background: #3e2723;
+        top: -50px;
+        left: 35px;
+      }
+
+      /* Cinematic Sequence */
+      #cinematic-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: auto;
+        text-align: center;
+        overflow: hidden;
+      }
+      #end-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1a0500;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #8b0000;
+        border: 1px solid #ffd700;
+      }
+
+      .btn-royal {
+        background: linear-gradient(to bottom, #8b0000, #4a0000);
+        border: 2px solid #ffd700;
+        color: #ffd700;
+        padding: 10px 24px;
+        font-family: "Playfair Display", serif;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .btn-royal:hover {
+        background: linear-gradient(to bottom, #ffd700, #b8860b);
+        color: #4a0000;
+        box-shadow: 0 0 15px #ffd700;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 3D WebGL Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+      <div id="crosshair"></div>
+      <div id="tooltip">[E] Khám phá hiện vật</div>
+
+      <div id="quest-tracker">
+        <h3
+          class="royal-font text-yellow-500 text-xl border-b border-red-800 pb-2 mb-2"
+        >
+          Tiến độ khám phá
+        </h3>
+        <div class="text-gray-300 text-lg">
+          Hiện vật:
+          <span id="progress-text" class="text-yellow-400 font-bold">0</span>/5
+        </div>
+        <ul id="quest-list" class="mt-2 text-sm text-gray-500 space-y-1">
+          <li id="q1">- Tổng quan Nhã nhạc</li>
+          <li id="q2">- Lịch sử hình thành</li>
+          <li id="q3">- Hệ thống nhạc khí</li>
+          <li id="q4">- Giá trị nghệ thuật</li>
+          <li id="q5">- Trải nghiệm ngày nay</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="blocker">
+      <div
+        class="text-center bg-black bg-opacity-80 p-10 border-4 border-red-900 rounded-lg shadow-[0_0_50px_rgba(255,215,0,0.2)]"
+      >
+        <h1
+          class="text-5xl text-yellow-500 mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+        >
+          KHÁM PHÁ NHÃ NHẠC CUNG ĐÌNH HUẾ
+        </h1>
+        <p class="text-gray-300 mb-8 text-lg italic">
+          Một trải nghiệm tương tác 3D
+        </p>
+        <div class="flex justify-center space-x-8 text-gray-400 mb-8">
+          <div>
+            <span
+              class="font-bold text-white border border-gray-500 px-2 py-1 rounded mr-2"
+              >W A S D</span
+            >
+            Di chuyển
+          </div>
+          <div>
+            <span
+              class="font-bold text-white border border-gray-500 px-2 py-1 rounded mr-2"
+              >CHUỘT</span
+            >
+            Nhìn quanh
+          </div>
+          <div>
+            <span
+              class="font-bold text-yellow-500 border border-yellow-500 px-2 py-1 rounded mr-2"
+              >E</span
+            >
+            Tương tác
+          </div>
+        </div>
+        <button id="start-btn" class="btn-royal text-2xl px-12 py-4">
+          BƯỚC VÀO ĐẠI NỘI
+        </button>
+      </div>
+    </div>
+
+    <!-- Modals (The 5 Artifacts) -->
+    <!-- 1. Tổng quan -->
+    <div id="modal-1" class="modal-overlay">
+      <div class="modal-content">
+        <button
+          class="close-btn absolute top-4 right-4 text-gray-500 hover:text-yellow-500 text-3xl"
+        >
+          &times;
+        </button>
+        <h2 class="text-3xl text-yellow-500 mb-6 border-b border-red-900 pb-2">
+          Tổng quan: Nhã nhạc Cung đình Huế là gì?
+        </h2>
+        <div class="text-lg leading-relaxed space-y-4">
+          <p>
+            <strong>Nhã nhạc</strong> (nghĩa đen là "âm nhạc chính thống", "âm
+            nhạc thanh cao") là thể loại nhạc có tính chất nghi lễ quốc gia,
+            được trình diễn trong các dịp đại lễ của triều đình phong kiến Việt
+            Nam.
+          </p>
+          <p>
+            Dưới triều Nguyễn (1802–1945), Nhã nhạc đạt đến đỉnh cao về sự tinh
+            tế, quy mô tổ chức và hệ thống lý luận. Đây không chỉ là giải trí mà
+            còn là
+            <span class="text-yellow-400 font-bold"
+              >biểu tượng cho quyền lực và sự trường tồn của triều đại</span
+            >.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Lịch sử -->
+    <div id="modal-2" class="modal-overlay">
+      <div class="modal-content">
+        <button
+          class="close-btn absolute top-4 right-4 text-gray-500 hover:text-yellow-500 text-3xl"
+        >
+          &times;
+        </button>
+        <h2 class="text-3xl text-yellow-500 mb-6 border-b border-red-900 pb-2">
+          Lịch sử hình thành và phát triển
+        </h2>
+        <p class="mb-6 italic">
+          Quá trình hình thành của Nhã nhạc là một dòng chảy dài qua nhiều thế
+          kỷ:
+        </p>
+        <div class="pl-4">
+          <div class="timeline-item">
+            <h4 class="text-xl text-yellow-400">
+              Thời Lý - Trần (Thế kỷ 11-14)
+            </h4>
+            <p>
+              Bắt đầu hình thành. Chịu ảnh hưởng bước đầu từ âm nhạc Chăm-pa và
+              âm nhạc Trung Hoa.
+            </p>
+          </div>
+          <div class="timeline-item">
+            <h4 class="text-xl text-yellow-400">Thời Lê Sơ (Thế kỷ 15)</h4>
+            <p>
+              Lương Đăng thiết lập hệ thống quy định khắt khe về nhạc khí, bài
+              bản, tách biệt giữa nhạc cung đình và nhạc dân gian.
+            </p>
+          </div>
+          <div class="timeline-item">
+            <h4 class="text-xl text-yellow-400">Thời Nhà Nguyễn (1802-1945)</h4>
+            <p>
+              Giai đoạn cực thịnh. Các vị vua như Gia Long, Minh Mạng cực kỳ chú
+              trọng. Nhã nhạc được chuẩn hóa, có nhạc chương riêng cho từng nghi
+              lễ (Tế Giao, Tế Miếu, Đại triều...).
+            </p>
+          </div>
+          <div class="timeline-item">
+            <h4 class="text-xl text-gray-400">Sau năm 1945</h4>
+            <p>
+              Triều đại phong kiến kết thúc, Nhã nhạc có nguy cơ thất truyền.
+            </p>
+          </div>
+          <div class="timeline-item border-l-0">
+            <h4 class="text-xl text-yellow-400 font-bold">Năm 2003</h4>
+            <p>
+              UNESCO chính thức công nhận Nhã nhạc Cung đình Huế là
+              <span class="text-white"
+                >Kiệt tác di sản phi vật thể và truyền khẩu của nhân loại</span
+              >.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Nhạc khí -->
+    <div id="modal-3" class="modal-overlay">
+      <div class="modal-content">
+        <button
+          class="close-btn absolute top-4 right-4 text-gray-500 hover:text-yellow-500 text-3xl"
+        >
+          &times;
+        </button>
+        <h2 class="text-3xl text-yellow-500 mb-6 border-b border-red-900 pb-2">
+          Hệ thống Nhạc khí và Tổ chức dàn nhạc
+        </h2>
+        <p class="mb-4">
+          Nhã nhạc không phải là một ban nhạc đơn lẻ mà là một hệ thống các dàn
+          nhạc khác nhau tùy theo quy mô buổi lễ:
+        </p>
+
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div class="bg-black bg-opacity-50 p-4 border border-red-900 rounded">
+            <h3 class="text-2xl text-red-400 mb-2">Dàn Đại nhạc</h3>
+            <p class="text-sm">
+              Thường dùng trong các đại lễ tế tự. Gồm trống lớn (trống chiến),
+              kèn bầu, xập xõa và các loại mõ. Âm thanh hào hùng, uy nghiêm.
+            </p>
+            <div class="css-3d-container">
+              <div class="css-model">
+                <div
+                  class="drum-face"
+                  style="transform: translateZ(20px)"
+                ></div>
+                <div
+                  class="drum-face"
+                  style="transform: translateZ(-20px)"
+                ></div>
+                <div class="drum-side"></div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-black bg-opacity-50 p-4 border border-red-900 rounded">
+            <h3 class="text-2xl text-yellow-300 mb-2">
+              Dàn Tiểu nhạc (Nhạc Huyền)
+            </h3>
+            <p class="text-sm">
+              Dùng trong các yến tiệc hoặc thường triều. Gồm đàn tỳ bà, đàn nhị,
+              đàn nguyệt, sáo trúc, tam âm la... Âm thanh thanh thoát, nhã nhặn.
+            </p>
+            <div class="css-3d-container">
+              <div class="css-model">
+                <div class="lute-body"></div>
+                <div class="lute-neck"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul class="list-disc pl-6 space-y-2">
+          <li>
+            <strong>Trống:</strong>
+            <span class="text-yellow-400">Linh hồn của dàn nhạc</span>, điều
+            khiển nhịp độ.
+          </li>
+          <li><strong>Bộ dây:</strong> Đàn tỳ bà, đàn tam, đàn nguyệt.</li>
+          <li><strong>Bộ hơi:</strong> Sáo trúc, kèn bầu.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. Giá trị nghệ thuật -->
+    <div id="modal-4" class="modal-overlay">
+      <div class="modal-content">
+        <button
+          class="close-btn absolute top-4 right-4 text-gray-500 hover:text-yellow-500 text-3xl"
+        >
+          &times;
+        </button>
+        <h2 class="text-3xl text-yellow-500 mb-6 border-b border-red-900 pb-2">
+          Giá trị nghệ thuật và Nhân văn
+        </h2>
+        <p class="text-xl mb-6 italic text-gray-400">
+          Tại sao Nhã nhạc lại được coi là báu vật?
+        </p>
+        <div class="space-y-6">
+          <div>
+            <h4 class="text-2xl text-yellow-400 mb-2">
+              Sự kết hợp đa loại hình
+            </h4>
+            <p>
+              Không chỉ có nhạc, Nhã nhạc còn đi kèm với Múa cung đình (như Lục
+              cúng hoa đăng, Lân mẫu xuất lân nhi...) và các bài Nhạc chương
+              (lời hát) giàu triết lý.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-2xl text-yellow-400 mb-2">Tính nguyên bản</h4>
+            <p>
+              Dù có tiếp thu yếu tố từ nước ngoài, nhưng qua hàng trăm năm,
+              người Việt đã "nội hóa" để tạo nên những giai điệu mang đậm tâm
+              hồn Việt.
+            </p>
+          </div>
+          <div>
+            <h4 class="text-2xl text-yellow-400 mb-2">Kỹ năng điêu luyện</h4>
+            <p>
+              Các nghệ nhân xưa phải trải qua quá trình đào tạo cực kỳ khắc
+              nghiệt để đạt được trình độ diễn tấu "như một".
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Trải nghiệm ngày nay -->
+    <div id="modal-5" class="modal-overlay">
+      <div class="modal-content">
+        <button
+          class="close-btn absolute top-4 right-4 text-gray-500 hover:text-yellow-500 text-3xl"
+        >
+          &times;
+        </button>
+        <h2 class="text-3xl text-yellow-500 mb-6 border-b border-red-900 pb-2">
+          Thưởng thức Nhã nhạc ở đâu ngày nay?
+        </h2>
+        <p class="mb-4">
+          Nếu bạn có dịp đến Huế, đừng bỏ lỡ cơ hội trải nghiệm "âm thanh của
+          bậc đế vương" tại:
+        </p>
+        <ul class="list-disc pl-6 space-y-3 mb-8 text-lg">
+          <li>
+            <strong class="text-yellow-400">Duyệt Thị Đường:</strong> Nhà hát cổ
+            nhất Việt Nam nằm bên trong Tử Cấm Thành.
+          </li>
+          <li>
+            <strong class="text-yellow-400">Minh Khiêm Đường:</strong> Nằm trong
+            khuôn viên Lăng Tự Đức.
+          </li>
+          <li>
+            <strong class="text-yellow-400">Các lễ hội Festival Huế:</strong>
+            Nơi các buổi đại tế được phục dựng hoành tráng.
+          </li>
+        </ul>
+        <div
+          class="bg-red-900 bg-opacity-40 border border-red-500 p-4 rounded-lg"
+        >
+          <h4 class="text-xl text-yellow-300 mb-2">✨ Một chút thú vị:</h4>
+          <p>
+            Bạn có biết rằng dưới thời Nguyễn, mỗi khi vua bước đi,
+            <span class="font-bold text-white"
+              >nhạc công phải tấu nhạc theo từng nhịp bước của vua</span
+            >
+            để tạo sự trang trọng tuyệt đối?
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- End Game Cinematic Layer -->
+    <div id="cinematic-layer">
+      <video id="end-video" src="nha-nhac.mp4" playsinline></video>
+
+      <div
+        id="end-buttons"
+        class="absolute bottom-20 flex space-x-6 opacity-0 transition-opacity duration-1000 z-50"
+      >
+        <button
+          onclick="window.location.href = '../../index.html'"
+          class="btn-royal"
+        >
+          Về Trang Chủ
+        </button>
+        <button
+          onclick="window.location.href = 'bai_tap_nha_nhac.html'"
+          class="btn-royal"
+          style="border-color: #fff; color: #fff"
+        >
+          Làm Bài Tập
+        </button>
+      </div>
+    </div>
+
+    <!-- Three.js Library & Scripts -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
+
+      // --- GAME STATE ---
+      let discoveredItems = new Set();
+      const totalItems = 5;
+      let isGamePaused = true;
+      let currentIntersected = null;
+
+      // --- AUDIO SYNTHESIS (No external files needed) ---
+      let audioCtx;
+      function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Create a deep, solemn drone (Imperial atmosphere)
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc1.type = "sine";
+        osc1.frequency.value = 55; // Low A
+        osc2.type = "triangle";
+        osc2.frequency.value = 110; // A octave higher
+
+        filter.type = "lowpass";
+        filter.frequency.value = 200;
+
+        gain.gain.value = 0.2; // Keep it ambient
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+      }
+
+      // --- THREE.JS SETUP ---
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0502); // Dark night/dusk
+      scene.fog = new THREE.FogExp2(0x0a0502, 0.015);
+
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+      camera.position.y = 1.6; // Eye level
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document
+        .getElementById("game-container")
+        .appendChild(renderer.domElement);
+
+      const controls = new PointerLockControls(camera, document.body);
+
+      const blocker = document.getElementById("blocker");
+      const startBtn = document.getElementById("start-btn");
+
+      startBtn.addEventListener("click", function () {
+        controls.lock();
+        initAudio();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+      });
+
+      controls.addEventListener("lock", function () {
+        blocker.style.display = "none";
+        isGamePaused = false;
+      });
+
+      controls.addEventListener("unlock", function () {
+        if (
+          !document.querySelector('.modal-overlay[style*="display: flex"]') &&
+          document.getElementById("cinematic-layer").style.display !== "flex"
+        ) {
+          blocker.style.display = "flex";
+        }
+        isGamePaused = true;
+      });
+
+      // --- ENVIRONMENT: HUE CITADEL PROCEDURAL GENERATION ---
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffe4b5, 0.2); // Dim warm light
+      scene.add(ambientLight);
+
+      const moonLight = new THREE.DirectionalLight(0x708090, 0.5);
+      moonLight.position.set(-50, 50, -50);
+      moonLight.castShadow = true;
+      moonLight.shadow.camera.top = 50;
+      moonLight.shadow.camera.bottom = -50;
+      moonLight.shadow.camera.left = -50;
+      moonLight.shadow.camera.right = 50;
+      scene.add(moonLight);
+
+      // Materials
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x2a2a2a,
+        roughness: 0.9,
+      });
+      const columnMat = new THREE.MeshStandardMaterial({
+        color: 0x8b0000,
+        roughness: 0.7,
+      }); // Royal Red
+      const stoneMat = new THREE.MeshStandardMaterial({
+        color: 0x505050,
+        roughness: 0.8,
+      });
+      const roofMat = new THREE.MeshStandardMaterial({
+        color: 0xb8860b,
+        roughness: 0.5,
+      }); // Gold/Yellow
+
+      // Floor (Sân Rồng)
+      const floorGeo = new THREE.PlaneGeometry(100, 100);
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Main Platform (Điện Thái Hòa base)
+      const platformGeo = new THREE.BoxGeometry(40, 1, 30);
+      const platform = new THREE.Mesh(platformGeo, stoneMat);
+      platform.position.set(0, 0.5, -20);
+      platform.receiveShadow = true;
+      scene.add(platform);
+
+      // Columns
+      const columnGeo = new THREE.CylinderGeometry(0.4, 0.4, 8, 16);
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 2; j++) {
+          const col = new THREE.Mesh(columnGeo, columnMat);
+          col.position.set(-15 + i * 7.5, 4.5, -15 - j * 10);
+          col.castShadow = true;
+          col.receiveShadow = true;
+          scene.add(col);
+        }
+      }
+
+      // Roof (Abstract representation)
+      const roofGeo = new THREE.ConeGeometry(25, 6, 4);
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.set(0, 11, -20);
+      roof.rotation.y = Math.PI / 4;
+      scene.add(roof);
+
+      // --- ARTIFACTS (Quest Items) ---
+      const artifacts = [];
+      const interactables = [];
+
+      const artifactData = [
+        { id: 1, pos: [-10, 1, -5], type: "box", color: 0xdaa520 }, // Tổng quan (Scroll box)
+        { id: 2, pos: [10, 1, -5], type: "stele", color: 0x808080 }, // Lịch sử (Stele)
+        { id: 3, pos: [0, 1.5, -15], type: "drum", color: 0x8b0000 }, // Nhạc khí (Drum)
+        { id: 4, pos: [-15, 1, 5], type: "pedestal", color: 0xcd853f }, // Nghệ thuật (Pedestal)
+        { id: 5, pos: [15, 1, 5], type: "lantern", color: 0xff4500 }, // Trải nghiệm (Lantern)
+      ];
+
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xffd700,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+      });
+
+      artifactData.forEach((data) => {
+        let geo;
+        if (data.type === "box") geo = new THREE.BoxGeometry(0.8, 0.4, 0.8);
+        else if (data.type === "stele") geo = new THREE.BoxGeometry(1, 2, 0.2);
+        else if (data.type === "drum")
+          geo = new THREE.CylinderGeometry(0.6, 0.6, 0.8, 32);
+        else if (data.type === "pedestal")
+          geo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 8);
+        else geo = new THREE.SphereGeometry(0.5, 16, 16);
+
+        const mat = new THREE.MeshStandardMaterial({
+          color: data.color,
+          metalness: 0.3,
+          roughness: 0.4,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { id: data.id };
+
+        // Add point light for dramatic effect
+        const light = new THREE.PointLight(0xffd700, 1, 5);
+        light.position.set(0, 1, 0);
+        mesh.add(light);
+
+        // Add glow mesh
+        const glowMesh = new THREE.Mesh(geo.clone(), glowMat);
+        glowMesh.scale.set(1.2, 1.2, 1.2);
+        mesh.add(glowMesh);
+
+        scene.add(mesh);
+        interactables.push(mesh);
+        artifacts.push(mesh);
+      });
+
+      // --- MOVEMENT & CONTROLS ---
+      const moveState = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+      };
+      const velocity = new THREE.Vector3();
+      const direction = new THREE.Vector3();
+      const speed = 40.0;
+      let prevTime = performance.now();
+
+      document.addEventListener("keydown", (e) => {
+        switch (e.code) {
+          case "KeyW":
+            moveState.forward = true;
+            break;
+          case "KeyS":
+            moveState.backward = true;
+            break;
+          case "KeyA":
+            moveState.left = true;
+            break;
+          case "KeyD":
+            moveState.right = true;
+            break;
+          case "KeyE":
+            handleInteraction();
+            break;
+        }
+      });
+
+      document.addEventListener("keyup", (e) => {
+        switch (e.code) {
+          case "KeyW":
+            moveState.forward = false;
+            break;
+          case "KeyS":
+            moveState.backward = false;
+            break;
+          case "KeyA":
+            moveState.left = false;
+            break;
+          case "KeyD":
+            moveState.right = false;
+            break;
+        }
+      });
+
+      // --- INTERACTION LOGIC ---
+      const raycaster = new THREE.Raycaster();
+      const centerPoint = new THREE.Vector2(0, 0);
+      const tooltip = document.getElementById("tooltip");
+      const crosshair = document.getElementById("crosshair");
+
+      function handleInteraction() {
+        if (currentIntersected && !isGamePaused) {
+          const id = currentIntersected.userData.id;
+          openModal(id);
+        }
+      }
+
+      function openModal(id) {
+        controls.unlock();
+        const modal = document.getElementById(`modal-${id}`);
+        if (modal) {
+          modal.style.display = "flex";
+
+          // Update Progress
+          if (!discoveredItems.has(id)) {
+            discoveredItems.add(id);
+            document.getElementById("progress-text").innerText =
+              discoveredItems.size;
+            const questLi = document.getElementById(`q${id}`);
+            questLi.classList.remove("text-gray-500");
+            questLi.classList.add("text-yellow-400", "font-bold");
+            questLi.innerText += " ✓";
+
+            // Stop glow
+            currentIntersected.children[1].visible = false;
+            currentIntersected.children[0].intensity = 0.2; // dim light
+
+            if (discoveredItems.size === totalItems) {
+              setTimeout(() => {
+                modal.style.display = "none";
+                startCinematic();
+              }, 2000); // 2 seconds reading time then auto trigger cinematic if last item
+            }
+          }
+        }
+      }
+
+      // Close Modals setup
+      document.querySelectorAll(".close-btn").forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          e.target.closest(".modal-overlay").style.display = "none";
+          if (discoveredItems.size < totalItems) {
+            controls.lock(); // return to game
+          } else {
+            startCinematic();
+          }
+        });
+      });
+
+      // --- CINEMATIC SEQUENCE ---
+      function startCinematic() {
+        document.getElementById("ui-layer").style.display = "none";
+        const cineLayer = document.getElementById("cinematic-layer");
+        cineLayer.style.display = "flex";
+
+        const video = document.getElementById("end-video");
+        const btns = document.getElementById("end-buttons");
+
+        // Tắt âm thanh nền của game để nghe tiếng video
+        if (audioCtx && audioCtx.state === "running") {
+          audioCtx.suspend();
+        }
+
+        // Phát video
+        video.play().catch((e) => {
+          console.warn(
+            "Không thể phát video (thiếu file nha-nhac.mp4 hoặc trình duyệt chặn):",
+            e,
+          );
+          // Nếu có lỗi, vẫn cho phép người chơi nhìn thấy nút bấm
+          btns.style.opacity = "1";
+          btns.style.pointerEvents = "auto";
+        });
+
+        // Khi video kết thúc, tự động hiện 2 nút
+        video.onended = () => {
+          btns.style.opacity = "1";
+          btns.style.pointerEvents = "auto";
+        };
+      }
+
+      // --- MAIN ANIMATION LOOP ---
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const time = performance.now();
+
+        // Artifact Animation (floating)
+        artifacts.forEach((mesh, index) => {
+          mesh.position.y += Math.sin(time * 0.002 + index) * 0.002;
+          mesh.rotation.y += 0.005;
+        });
+
+        if (controls.isLocked) {
+          // Raycasting for Interaction
+          raycaster.setFromCamera(centerPoint, camera);
+          const intersects = raycaster.intersectObjects(interactables);
+
+          if (intersects.length > 0 && intersects[0].distance < 4) {
+            if (currentIntersected !== intersects[0].object) {
+              currentIntersected = intersects[0].object;
+              crosshair.classList.add("active");
+              if (!discoveredItems.has(currentIntersected.userData.id)) {
+                tooltip.style.opacity = 1;
+              }
+            }
+          } else {
+            currentIntersected = null;
+            crosshair.classList.remove("active");
+            tooltip.style.opacity = 0;
+          }
+
+          // Movement physics
+          const delta = (time - prevTime) / 1000;
+
+          velocity.x -= velocity.x * 10.0 * delta;
+          velocity.z -= velocity.z * 10.0 * delta;
+
+          direction.z = Number(moveState.forward) - Number(moveState.backward);
+          direction.x = Number(moveState.right) - Number(moveState.left);
+          direction.normalize();
+
+          if (moveState.forward || moveState.backward)
+            velocity.z -= direction.z * speed * delta;
+          if (moveState.left || moveState.right)
+            velocity.x -= direction.x * speed * delta;
+
+          controls.moveRight(-velocity.x * delta);
+          controls.moveForward(-velocity.z * delta);
+
+          // Simple Boundary Collision
+          if (camera.position.x < -40) camera.position.x = -40;
+          if (camera.position.x > 40) camera.position.x = 40;
+          if (camera.position.z < -40) camera.position.z = -40;
+          if (camera.position.z > 40) camera.position.z = 40;
+        }
+
+        prevTime = time;
+        renderer.render(scene, camera);
+      }
+
+      // Handle Window Resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Start Loop
+      animate();
+      // ===== AUTO PLAY NHÃ NHẠC =====
+
+      const backgroundMusic = new Audio("nha-nhac.mp3");
+      backgroundMusic.loop = true;
+      backgroundMusic.volume = 0.6;
+
+      // Thử autoplay ngay khi load
+      window.addEventListener("load", async () => {
+        try {
+          await backgroundMusic.play();
+          console.log("Nhã nhạc đang phát 🎶");
+        } catch (err) {
+          console.warn("Autoplay bị chặn. Chờ người dùng tương tác...");
+
+          // Khi người dùng click lần đầu sẽ phát
+          const startMusic = () => {
+            backgroundMusic.play();
+            document.removeEventListener("click", startMusic);
+          };
+
+          document.addEventListener("click", startMusic);
+        }
+      });
+    </script>
+  </body>
+</html>

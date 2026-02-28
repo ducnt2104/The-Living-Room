@@ -3,83 +3,95 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bảo tàng 3D Điện Biên Phủ - Fix Bug</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Bảo tàng 3D Điện Biên Phủ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Be+Vietnam+Pro:wght@300;400;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="shortcut icon" href="../../favicon.svg" type="image/x-icon" />
+    <!-- Import Map cho Three.js -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
     <style>
       body {
         margin: 0;
         overflow: hidden;
-        background-color: #050505;
+        background-color: #f0f0f0;
         font-family: "Be Vietnam Pro", sans-serif;
       }
 
+      /* Tâm ngắm */
       #crosshair {
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 10px;
-        height: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.4);
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.8);
         border-radius: 50%;
         transform: translate(-50%, -50%);
         z-index: 100;
         pointer-events: none;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
       }
 
+      /* Theo dõi nhiệm vụ */
       #quest-tracker {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: rgba(10, 10, 10, 0.85);
+        background: rgba(255, 255, 255, 0.9);
         border: 1px solid #d4af37;
         padding: 15px;
-        color: white;
+        color: #333;
         border-radius: 12px;
         z-index: 100;
         backdrop-filter: blur(10px);
-        min-width: 200px;
+        min-width: 220px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
       }
 
+      /* Bảng thông tin hiện vật */
       .artifact-card {
-        background: linear-gradient(
-          135deg,
-          rgba(20, 18, 15, 0.98),
-          rgba(10, 8, 5, 0.99)
-        );
-        border: 1px solid #d4af37;
+        background: #ffffff;
+        border: 2px solid #d4af37;
         display: none;
         pointer-events: all;
         max-height: 90vh;
         width: 95%;
         max-width: 900px;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 0 50px rgba(0, 0, 0, 1);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
       }
 
+      /* Màn hình chờ bắt đầu */
       #blocker {
         position: absolute;
         width: 100%;
         height: 100%;
         background: radial-gradient(
           circle,
-          rgba(20, 20, 20, 0.7) 0%,
-          rgba(0, 0, 0, 1) 100%
+          rgba(255, 255, 255, 0.9) 0%,
+          rgba(200, 200, 200, 1) 100%
         );
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         z-index: 500;
-        color: white;
+        color: #333;
         text-align: center;
         cursor: pointer;
       }
 
+      /* Gợi ý tương tác */
       .hint {
         position: fixed;
         bottom: 15%;
@@ -89,27 +101,31 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 2px;
-        text-shadow: 2px 2px 8px black;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
         display: none;
         z-index: 50;
         animation: pulse 1.5s infinite;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 8px 16px;
+        border-radius: 20px;
       }
 
       @keyframes pulse {
         0%,
         100% {
-          opacity: 1;
+          transform: translateX(-50%) scale(1);
         }
         50% {
-          opacity: 0.5;
+          transform: translateX(-50%) scale(1.05);
         }
       }
 
+      /* Thanh tiến trình */
       .progress-bar {
         width: 100%;
-        height: 6px;
-        background: #222;
-        border-radius: 3px;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
         margin-top: 10px;
         overflow: hidden;
       }
@@ -120,6 +136,7 @@
         transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
+      /* Video Overlay (Ép xem) */
       #video-overlay {
         display: none;
         position: fixed;
@@ -128,153 +145,244 @@
         z-index: 2000;
       }
 
+      /* Thanh cuộn nội dung */
       #artifact-content::-webkit-scrollbar {
-        width: 5px;
+        width: 6px;
       }
       #artifact-content::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.2);
+        background: #f1f1f1;
       }
       #artifact-content::-webkit-scrollbar-thumb {
         background: #d4af37;
         border-radius: 10px;
       }
 
-      .close-btn {
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
+      /* Màn hình kết thúc */
+      #end-screen {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(10px);
+        z-index: 3000;
+        flex-direction: column;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: 0.3s ease;
-        color: #888;
-        border: 1px solid transparent;
-      }
-      .close-btn:hover {
-        background: rgba(220, 38, 38, 0.2);
-        color: white;
-        border-color: rgba(220, 38, 38, 0.5);
-        transform: rotate(90deg);
+        align-items: center;
       }
     </style>
   </head>
   <body>
+    <!-- Màn hình chào mừng -->
     <div id="blocker">
       <div
-        class="max-w-xl p-10 bg-black/40 border border-yellow-900/50 rounded-3xl backdrop-blur-xl"
+        class="max-w-2xl p-10 bg-white border border-yellow-600/30 rounded-3xl shadow-2xl"
       >
         <h1
-          class="text-6xl font-bold mb-6 text-yellow-500 font-serif uppercase tracking-tighter"
+          class="text-5xl md:text-6xl font-bold mb-4 text-yellow-600 font-serif uppercase tracking-tight"
         >
-          Điện Biên Phủ
+          Bảo tàng Điện Biên Phủ
         </h1>
-        <p
-          id="main-status"
-          class="text-lg text-gray-400 mb-8 font-light italic"
-        >
+        <p class="text-lg text-gray-600 mb-8 font-light italic">
           "Chấn động địa cầu - Bản hùng ca của lòng yêu nước"
         </p>
         <div
-          class="space-y-4 text-left text-sm text-gray-500 mb-8 border-l-2 border-yellow-700/30 pl-6"
+          class="space-y-3 text-left text-sm text-gray-700 mb-8 bg-gray-50 p-6 rounded-xl border border-gray-200"
         >
-          <p>• Di chuyển bằng phím <b>WASD</b></p>
-          <p>• Quan sát bằng <b>Chuột</b></p>
-          <p>• Nhấp <b>Chuột trái</b> vào vật thể để xem thuyết minh</p>
+          <p class="flex items-center gap-2">
+            🕹️ Sử dụng phím <b>W, A, S, D</b> để di chuyển.
+          </p>
+          <p class="flex items-center gap-2">
+            🖱️ Di chuyển <b>Chuột</b> để nhìn xung quanh.
+          </p>
+          <p class="flex items-center gap-2">
+            👆 Hướng tâm ngắm và click <b>Chuột trái</b> vào các mô hình để xem
+            thông tin.
+          </p>
+          <p class="flex items-center gap-2 text-red-600 font-semibold mt-2">
+            ⭐ Hoàn thành khám phá 5 mô hình để mở khóa phim tài liệu.
+          </p>
         </div>
         <button
           id="start-btn"
-          class="w-full bg-yellow-600 hover:bg-yellow-500 text-black px-10 py-4 rounded-xl font-bold transition-all uppercase tracking-widest shadow-lg shadow-yellow-900/20"
+          class="w-full bg-yellow-600 hover:bg-yellow-500 text-white px-10 py-4 rounded-xl font-bold transition-all uppercase tracking-widest shadow-lg"
         >
-          Bắt đầu khám phá
+          Bắt đầu tham quan
         </button>
       </div>
     </div>
 
+    <!-- UI Nhiệm vụ -->
     <div id="quest-tracker">
       <h4
-        class="text-[10px] uppercase tracking-[0.2em] text-yellow-600 font-bold mb-1"
+        class="text-[11px] uppercase tracking-[0.1em] text-yellow-600 font-bold mb-1"
       >
-        Nhiệm vụ thu thập
+        Tiến trình tham quan
       </h4>
-      <div class="text-2xl font-bold font-serif tracking-tight text-white">
+      <div class="text-3xl font-bold font-serif text-gray-800">
         <span id="quest-count">0</span> / 5
       </div>
       <div class="progress-bar"><div id="progress-fill"></div></div>
       <p
         id="quest-msg"
-        class="text-[9px] text-gray-500 mt-2 uppercase tracking-wider italic"
+        class="text-[10px] text-gray-500 mt-2 uppercase tracking-wide font-semibold"
       >
-        Tìm kiếm dấu tích lịch sử...
+        Khám phá các mô hình...
       </p>
     </div>
 
     <div id="crosshair"></div>
-    <div id="hint" class="hint">Tương tác (Chuột trái)</div>
+    <div id="hint" class="hint">Nhấp chuột trái để xem</div>
 
+    <!-- Bảng thông tin hiện vật -->
+    <!-- NÚT THOÁT (Ẩn mặc định) -->
+    <button
+      id="exit-artifact-btn"
+      style="
+        display: none;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 12px 24px;
+        font-size: 18px;
+        background: #ff4a4a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      "
+    >
+      Thoát hiện vật
+    </button>
+
+    <!-- BẢNG ĐIỀU KHIỂN MOBILE (Ẩn mặc định) -->
+    <div
+      id="mobile-joystick"
+      style="
+        display: none;
+        position: absolute;
+        bottom: 30px;
+        left: 30px;
+        z-index: 9999;
+        pointer-events: auto;
+      "
+    >
+      <div style="display: flex; flex-direction: column; align-items: center">
+        <button
+          id="btn-up"
+          style="
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            border-radius: 30px;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px solid #333;
+            cursor: pointer;
+            user-select: none;
+          "
+        >
+          ▲
+        </button>
+        <div style="display: flex">
+          <button
+            id="btn-left"
+            style="
+              width: 60px;
+              height: 60px;
+              margin: 5px;
+              border-radius: 30px;
+              font-size: 24px;
+              background: rgba(255, 255, 255, 0.7);
+              border: 2px solid #333;
+              cursor: pointer;
+              user-select: none;
+            "
+          >
+            ◀
+          </button>
+          <button
+            id="btn-down"
+            style="
+              width: 60px;
+              height: 60px;
+              margin: 5px;
+              border-radius: 30px;
+              font-size: 24px;
+              background: rgba(255, 255, 255, 0.7);
+              border: 2px solid #333;
+              cursor: pointer;
+              user-select: none;
+            "
+          >
+            ▼
+          </button>
+          <button
+            id="btn-right"
+            style="
+              width: 60px;
+              height: 60px;
+              margin: 5px;
+              border-radius: 30px;
+              font-size: 24px;
+              background: rgba(255, 255, 255, 0.7);
+              border: 2px solid #333;
+              cursor: pointer;
+              user-select: none;
+            "
+          >
+            ▶
+          </button>
+        </div>
+      </div>
+    </div>
     <div
       id="info-panel"
-      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[600] artifact-card rounded-3xl overflow-hidden shadow-2xl"
+      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[600] artifact-card rounded-3xl overflow-hidden"
     >
-      <div class="close-btn" onclick="closePanel()">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </div>
-      <div class="p-8 md:p-14">
-        <div class="flex items-center gap-4 mb-2">
+      <div class="p-8 md:p-12">
+        <div class="flex items-center gap-4 mb-3">
           <span class="h-px w-12 bg-yellow-600"></span>
           <span
-            class="text-yellow-600 text-xs font-bold uppercase tracking-[0.3em]"
-            >Hồ sơ hiện vật</span
+            class="text-yellow-600 text-sm font-bold uppercase tracking-[0.2em]"
+            >Hồ sơ di tích</span
           >
         </div>
         <h2
           id="artifact-name"
-          class="text-4xl md:text-5xl font-bold text-yellow-500 mb-8 font-serif uppercase leading-none"
+          class="text-3xl md:text-5xl font-bold text-gray-900 mb-6 font-serif uppercase"
         ></h2>
 
         <div
           id="artifact-content"
-          class="text-gray-300 leading-relaxed text-lg h-[40vh] overflow-y-auto pr-6 mb-8 font-light border-l border-yellow-900/20 pl-8"
-        ></div>
+          class="text-gray-700 leading-relaxed text-lg h-[35vh] overflow-y-auto pr-6 mb-8 border-l-4 border-yellow-500 pl-6 bg-gray-50 p-4 rounded-r-xl shadow-inner"
+        >
+          <!-- Content injected here -->
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-          <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
             <h4
-              class="text-yellow-500 font-bold text-xs uppercase mb-3 tracking-widest flex items-center gap-2"
+              class="text-blue-800 font-bold text-sm uppercase mb-2 tracking-wide"
             >
-              Giá trị chiến thuật
+              Chiến thuật & Diễn biến
             </h4>
             <p
               id="artifact-tactic"
-              class="text-gray-400 text-sm leading-relaxed italic"
+              class="text-gray-700 text-sm leading-relaxed"
             ></p>
           </div>
-          <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+          <div class="bg-red-50 p-5 rounded-2xl border border-red-100">
             <h4
-              class="text-yellow-500 font-bold text-xs uppercase mb-3 tracking-widest flex items-center gap-2"
+              class="text-red-800 font-bold text-sm uppercase mb-2 tracking-wide"
             >
               Dấu ấn lịch sử
             </h4>
             <p
               id="artifact-history"
-              class="text-gray-400 text-sm leading-relaxed italic"
+              class="text-gray-700 text-sm leading-relaxed"
             ></p>
           </div>
         </div>
@@ -282,7 +390,7 @@
         <div class="flex justify-end">
           <button
             onclick="closePanel()"
-            class="bg-yellow-600 hover:bg-yellow-500 text-black px-12 py-3 rounded-full font-bold transition-all uppercase text-xs tracking-widest"
+            class="bg-yellow-600 hover:bg-yellow-700 text-white px-10 py-3 rounded-xl font-bold transition-all uppercase text-sm tracking-widest shadow-md"
           >
             Đóng & Tiếp tục
           </button>
@@ -290,75 +398,103 @@
       </div>
     </div>
 
+    <!-- Trình chiếu Video -->
     <div id="video-overlay">
-      <div
-        class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none z-10"
-      ></div>
-      <button
-        onclick="closeVideo()"
-        class="absolute top-12 right-12 z-50 bg-white/10 hover:bg-red-600 w-12 h-12 rounded-full flex items-center justify-center transition-all"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          stroke-width="2"
-        >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-      <video id="full-video" class="w-full h-full object-cover">
-        <source
-          src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-          type="video/mp4"
-        />
+      <!-- Không có nút đóng, ép xem hết -->
+      <video id="full-video" class="w-full h-full object-contain bg-black">
+        <source src="dien-bien.mp4" type="video/mp4" />
+        Trình duyệt của bạn không hỗ trợ thẻ video.
       </video>
     </div>
 
-    <script type="module">
-      import * as THREE from "https://cdn.skypack.dev/three@0.128.0/build/three.module.js";
-      import { PointerLockControls } from "https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/PointerLockControls.js";
+    <!-- Màn hình kết thúc (Hiện sau khi xem xong video) -->
+    <div id="end-screen">
+      <div
+        class="bg-white p-10 rounded-3xl text-center max-w-2xl w-11/12 shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+      >
+        <h2 class="text-4xl font-serif font-bold text-yellow-600 mb-4">
+          Hoàn thành khóa học!
+        </h2>
+        <p class="text-gray-600 mb-10 text-lg">
+          Bạn đã xuất sắc hoàn thành việc tìm hiểu toàn bộ di tích và theo dõi
+          thước phim lịch sử hào hùng của chiến thắng Điện Biên Phủ.
+        </p>
 
+        <div class="flex flex-col md:flex-row gap-4 justify-center">
+          <a
+            href="bai_tap_dien_bien.html"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-bold transition-transform hover:scale-105 shadow-lg flex-1"
+          >
+            📝 Làm bài tập
+          </a>
+          <a
+            href="nhan_vat_dien_bien.html"
+            class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-4 rounded-xl font-bold transition-transform hover:scale-105 shadow-lg flex-1"
+          >
+            💬 Trò chuyện nhân vật
+          </a>
+          <a
+            href="../../index.html"
+            class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-4 rounded-xl font-bold transition-transform hover:scale-105 shadow-lg flex-1"
+          >
+            🏠 Về trang chủ
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
+
+      // ==========================================
+      // NỘI DUNG HIỆN VẬT
+      // ==========================================
       const artifactsData = {
         a1_hill: {
-          name: "Hố bộc phá Đồi A1",
-          content: `Đồi A1 (Eliane 2) là điểm cao quan trọng nhất. Quân Pháp xây hệ thống hầm ngầm kiên cố. Để giải quyết, công binh ta đào hầm dài 47m và đặt 960kg thuốc nổ. Đêm 6/5/1954, khối bộc phá nổ tung, tạo hiệu lệnh tổng công kích tiêu diệt tập đoàn cứ điểm.`,
+          name: "Đồi A1 & Hố Bộc Phá",
+          content: `Đồi A1 là cứ điểm quan trọng nhất trong dãy đồi phía Đông. Tại đây ta và Pháp giành nhau từng tấc đất, đánh đi đánh lại tới 4 đợt nhưng vẫn chưa dứt điểm được vì hệ thống hầm ngầm của Pháp quá kiên cố.<br><br><b>Đêm 06/05 (Đợt 3)</b>: Sau khi đào một đường hầm sâu vào lòng đồi, quân ta đặt khối bộc phá khổng lồ nặng 960kg. Tiếng nổ lớn lúc 20h30 là hiệu lệnh tổng tấn công trên toàn mặt trận.`,
           tactic:
-            "Đánh sập hầm ngầm bằng bộc phá khối lượng lớn dưới lòng đất.",
-          history: "Tiếng nổ quyết định mở đường cho ngày đại thắng 7/5.",
+            "Đào hầm ngầm dưới lòng đất, dùng bộc phá khối lượng lớn phá vỡ hệ thống hầm ngầm kiên cố địch.",
+          history:
+            "Điểm nóng quyết định cục diện chiến dịch. Chìa khóa mở toang tập đoàn cứ điểm.",
         },
         de_castries: {
           name: "Hầm Tướng De Castries",
-          content: `Nằm tại trung tâm Mường Thanh, đây là nơi tướng De Castries chỉ huy. Hầm lợp mái vòm sắt uốn cong cực kỳ vững chãi. Chiều 7/5/1954, tổ xung kích của ta bắt sống tướng De Castries ngay tại bàn làm việc.`,
-          tactic: "Tiêu diệt cơ quan đầu não địch.",
+          content: `Cơ quan đầu não của thực dân Pháp, có cấu trúc mái vòm sắt uốn cong cực kỳ vững chãi, nằm tại trung tâm Mường Thanh.<br><br><b>Chiều 07/05/1954:</b> 15h00, quân ta tổng lực tấn công vào trung tâm từ nhiều hướng. 17h30, tổ xung kích do đồng chí Tạ Quốc Luật chỉ huy ập vào hầm ngầm, bắt sống tướng De Castries và toàn bộ ban tham mưu của Pháp.`,
+          tactic:
+            "Áp dụng chiến thuật 'Vây lấn', siết chặt vòng vây, tiêu diệt cơ quan đầu não.",
           history:
-            "Nơi chứng kiến sự đầu hàng của thực dân Pháp tại Đông Dương.",
-        },
-        artillery: {
-          name: "Pháo 105mm",
-          content: `Quân ta đã kéo pháo bằng tay qua những dãy núi cao dựng đứng. Sự xuất hiện bất ngờ của hỏa lực pháo binh ta từ các đỉnh núi đã làm tê liệt sân bay Mường Thanh ngay từ những giờ đầu chiến dịch.`,
-          tactic: "Hỏa lực áp đảo từ địa hình cao bất ngờ.",
-          history: "Kỳ tích kéo pháo bằng sức người vĩ đại của quân dân ta.",
+            "Nơi chứng kiến sự đầu hàng vô điều kiện, kết thúc 56 ngày đêm lịch sử.",
         },
         muong_phang: {
           name: "Sở chỉ huy Mường Phăng",
-          content: `Ẩn mình dưới tán rừng cổ thụ, đây là nơi Đại tướng Võ Nguyên Giáp đưa ra quyết định lịch sử: Chuyển từ 'Đánh nhanh thắng nhanh' sang 'Đánh chắc tiến chắc'.`,
-          tactic: "Chỉ huy linh hoạt, sát sao thực tế chiến trường.",
-          history: "Linh hồn chiến lược của chiến thắng Điện Biên Phủ.",
+          content: `Nằm ẩn mình dưới tán rừng đại ngàn, cách trung tâm Mường Thanh khoảng 25km. Nơi đây có lán ở và đường hầm xuyên núi thô sơ nhưng cực kỳ bí mật.<br><br>Đây là nơi Đại tướng Võ Nguyên Giáp làm việc và đưa ra quyết định lịch sử khó khăn nhất trong đời binh nghiệp: Chuyển phương châm từ <b>"Đánh nhanh thắng nhanh"</b> sang <b>"Đánh chắc tiến chắc"</b>.`,
+          tactic:
+            "Vị trí chỉ huy an toàn, bí mật, bao quát chiến trường để đưa ra quyết định sát thực tế.",
+          history: "Linh hồn chiến lược của toàn bộ chiến dịch Điện Biên Phủ.",
         },
-        victory_statue: {
-          name: "Tượng đài Chiến thắng",
-          content: `Công trình bằng đồng nặng 220 tấn tái hiện hình ảnh 3 chiến sĩ và em bé dân tộc Thái, biểu trưng cho sức mạnh đoàn kết toàn dân tộc dẫn tới thắng lợi cuối cùng.`,
-          tactic: "Tập hợp sức mạnh tổng lực của nhân dân.",
+        panorama: {
+          name: "Bảo tàng & Tranh Panorama",
+          content: `Bảo tàng Chiến thắng lịch sử Điện Biên Phủ. Điểm nhấn là bức tranh Panorama (tranh toàn cảnh) lớn nhất thế giới về chiến dịch này.<br><br>Bức tranh tái hiện cực kỳ chân thực 56 ngày đêm khói lửa, từ những trận mở màn (đột phá cửa ngõ) đánh vào Him Lam, Độc Lập cho đến ngày chiến thắng huy hoàng.`,
+          tactic:
+            "Ghi chép và lưu giữ toàn bộ không gian, thời gian của chiến dịch một cách trực quan.",
           history:
-            "Biểu tượng hòa bình và lòng kiêu hãnh của dân tộc Việt Nam.",
+            "Công trình nghệ thuật mang tầm vóc quốc tế, bảo tồn vĩnh viễn ký ức hào hùng.",
+        },
+        cemetery: {
+          name: "Nghĩa trang Liệt sĩ A1",
+          content: `Nơi an nghỉ và tri ân những người hùng đã nằm lại mảnh đất này. Họ đã chiến đấu anh dũng qua 3 đợt tấn công cam go.<br><br>Tiêu biểu như anh hùng Phan Đình Giót lấy thân mình lấp lỗ châu mai trong trận mở màn Him Lam (13/03), hay anh hùng Tô Vĩnh Diện lấy thân chèn pháo.`,
+          tactic:
+            "Tinh thần 'Quyết tử cho Tổ quốc quyết sinh', sẵn sàng hy sinh vì mục tiêu chung.",
+          history:
+            "Biểu tượng bất diệt của lòng biết ơn và sự hy sinh vì độc lập, tự do của dân tộc.",
         },
       };
 
+      // ==========================================
+      // KHAI BÁO BIẾN THREE.JS
+      // ==========================================
       let scene, camera, renderer, controls;
       let moveForward = false,
         moveBackward = false,
@@ -366,7 +502,9 @@
         moveRight = false;
       let velocity = new THREE.Vector3();
       let direction = new THREE.Vector3();
-      let artifacts = [];
+
+      let hitBoxes = []; // Chứa các khối tàng hình để click chuột
+      let animatedModels = []; // Chứa các model cần xoay animation
       let visited = new Set();
       let prevTime = performance.now();
 
@@ -374,25 +512,29 @@
       animate();
 
       function init() {
+        // 1. SCENE
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.Fog(0x050505, 0, 45);
+        scene.background = new THREE.Color(0xf5f5f5); // Màu phòng sáng
+        scene.fog = new THREE.Fog(0xf5f5f5, 10, 80);
 
+        // 2. CAMERA
         camera = new THREE.PerspectiveCamera(
           70,
           window.innerWidth / window.innerHeight,
           0.1,
           1000,
         );
-        camera.position.set(0, 1.6, 5);
+        camera.position.set(0, 1.7, 10); // Chiều cao mắt người
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambient);
+        // 3. LIGHTING (Sáng sủa hơn)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xd4af37, 1);
-        spotLight.position.set(0, 20, 0);
-        scene.add(spotLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xdddddd, 0.6);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
 
+        // 4. CONTROLS
         controls = new PointerLockControls(camera, document.body);
         const blocker = document.getElementById("blocker");
         const startBtn = document.getElementById("start-btn");
@@ -408,115 +550,278 @@
         controls.addEventListener("unlock", () => {
           if (
             document.getElementById("info-panel").style.display !== "block" &&
-            document.getElementById("video-overlay").style.display !== "block"
+            document.getElementById("video-overlay").style.display !==
+              "block" &&
+            document.getElementById("end-screen").style.display !== "flex"
           ) {
             blocker.style.display = "flex";
             document.getElementById("start-btn").innerText =
-              "Tiếp tục khám phá";
+              "Tiếp tục tham quan";
           }
         });
 
-        // Sàn đá
-        const floorGeo = new THREE.PlaneGeometry(100, 100);
-        const floorMat = new THREE.MeshStandardMaterial({
-          color: 0x080808,
-          roughness: 0.2,
-          metalness: 0.3,
-        });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        scene.add(floor);
+        // 5. XÂY DỰNG KHÔNG GIAN BẢO TÀNG (Phòng trưng bày)
+        buildMuseumRoom();
 
-        buildMuseum();
+        // 6. TẠO VÀ ĐẶT 5 MÔ HÌNH VÀO BỤC
+        // Tham số: x, z, id, hàm tạo model
+        placeArtifact(-15, -10, "a1_hill", createA1Hill);
+        placeArtifact(-5, -20, "de_castries", createDeCastries);
+        placeArtifact(5, -20, "muong_phang", createMuongPhang);
+        placeArtifact(15, -10, "panorama", createPanorama);
+        placeArtifact(0, -5, "cemetery", createCemetery); // Ở giữa gần cửa
 
-        // Vị trí hiện vật
-        addArt(0, -15, "a1_hill", 0xcc0000);
-        addArt(18, -10, "de_castries", 0x555555);
-        addArt(-18, -10, "artillery", 0x1a331a);
-        addArt(12, -28, "muong_phang", 0x5d4037);
-        addArt(-12, -28, "victory_statue", 0xd4af37);
-
+        // 7. RENDERER
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
+        // 8. EVENTS
         window.addEventListener("resize", onWindowResize);
         document.addEventListener("keydown", onKeyDown);
         document.addEventListener("keyup", onKeyUp);
         document.addEventListener("mousedown", onMouseDown);
       }
 
-      function buildMuseum() {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-        const wallBack = new THREE.Mesh(
-          new THREE.BoxGeometry(60, 15, 1),
+      // --- CÁC HÀM XÂY DỰNG MÔ HÌNH 3D ---
+
+      function buildMuseumRoom() {
+        // Sàn nhà (Gỗ nhạt)
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({
+          color: 0xe8dcc5,
+          roughness: 0.8,
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Tường phòng (Màu trắng kem)
+        const wallMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 1,
+        });
+
+        // Tường sau
+        const backWall = new THREE.Mesh(
+          new THREE.BoxGeometry(60, 20, 1),
           wallMat,
         );
-        wallBack.position.set(0, 7.5, -40);
-        scene.add(wallBack);
+        backWall.position.set(0, 10, -30);
+        scene.add(backWall);
 
-        // Cột
-        const colGeo = new THREE.BoxGeometry(1.5, 15, 1.5);
-        for (let x = -28; x <= 28; x += 14) {
-          const col = new THREE.Mesh(colGeo, wallMat);
-          col.position.set(x, 7.5, -5);
-          scene.add(col);
-          const colB = col.clone();
-          colB.position.z = -25;
-          scene.add(colB);
-        }
+        // Tường trái
+        const leftWall = new THREE.Mesh(
+          new THREE.BoxGeometry(1, 20, 60),
+          wallMat,
+        );
+        leftWall.position.set(-30, 10, 0);
+        scene.add(leftWall);
+
+        // Tường phải
+        const rightWall = new THREE.Mesh(
+          new THREE.BoxGeometry(1, 20, 60),
+          wallMat,
+        );
+        rightWall.position.set(30, 10, 0);
+        scene.add(rightWall);
+
+        // Tường trước
+        const frontWall = new THREE.Mesh(
+          new THREE.BoxGeometry(60, 20, 1),
+          wallMat,
+        );
+        frontWall.position.set(0, 10, 30);
+        scene.add(frontWall);
+
+        // Trần nhà
+        const ceilGeo = new THREE.PlaneGeometry(60, 60);
+        const ceilMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+        const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.y = 20;
+        scene.add(ceiling);
       }
 
-      function addArt(x, z, id, color) {
+      function placeArtifact(x, z, id, modelCreationFunc) {
         const group = new THREE.Group();
         group.position.set(x, 0, z);
 
-        const pedestal = new THREE.Mesh(
-          new THREE.BoxGeometry(2.5, 1, 2.5),
-          new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.5 }),
-        );
-        pedestal.position.y = 0.5;
+        // 1. Tạo bục trưng bày
+        const pedestalGeo = new THREE.CylinderGeometry(1.5, 1.8, 1.2, 32);
+        const pedestalMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.2,
+        });
+        const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+        pedestal.position.y = 0.6;
+        pedestal.receiveShadow = true;
+        pedestal.castShadow = true;
         group.add(pedestal);
 
-        // Hiện vật trực quan hơn
-        let model;
-        if (id === "artillery") {
-          model = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.2, 0.2, 2),
-            new THREE.MeshStandardMaterial({ color: color }),
-          );
-          model.rotation.z = Math.PI / 4;
-        } else if (id === "de_castries") {
-          model = new THREE.Mesh(
-            new THREE.SphereGeometry(
-              0.8,
-              16,
-              8,
-              0,
-              Math.PI * 2,
-              0,
-              Math.PI / 2,
-            ),
-            new THREE.MeshStandardMaterial({ color: color }),
-          );
-        } else {
-          model = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(0.8),
-            new THREE.MeshStandardMaterial({ color: color, metalness: 0.6 }),
-          );
-        }
-        model.position.y = 2;
-        model.userData = { id: id };
-        group.add(model);
+        // Đế trang trí cho bục
+        const baseGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0xd4af37 }); // Viền vàng
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = 0.05;
+        group.add(base);
 
-        const light = new THREE.PointLight(0xd4af37, 2, 10);
-        light.position.y = 4;
-        group.add(light);
+        // 2. Tạo Model 3D từ hàm
+        const modelGroup = modelCreationFunc();
+        // Scale nhỏ lại để vừa bục
+        modelGroup.scale.set(0.25, 0.25, 0.25);
+        modelGroup.position.y = 1.3; // Đặt lên bục
+        group.add(modelGroup);
+        animatedModels.push(modelGroup); // Lưu để xoay
 
-        artifacts.push(model);
+        // 3. Đèn Spotlight chiếu riêng cho hiện vật
+        const spotLight = new THREE.SpotLight(
+          0xffffff,
+          1.5,
+          20,
+          Math.PI / 6,
+          0.5,
+          1,
+        );
+        spotLight.position.set(x, 8, z);
+        spotLight.target = pedestal;
+        scene.add(spotLight);
+
+        // 4. Hitbox tàng hình để dễ click chuột (Bọc toàn bộ khu vực bục)
+        const hitBoxGeo = new THREE.BoxGeometry(3, 4, 3);
+        const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false }); // Tàng hình
+        const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+        hitBox.position.y = 2;
+        hitBox.userData = { id: id, baseMat: baseMat }; // Lưu thông tin
+        group.add(hitBox);
+        hitBoxes.push(hitBox);
+
         scene.add(group);
       }
+
+      // --- CÁC HÀM TẠO 5 MÔ HÌNH CHI TIẾT ---
+
+      function createA1Hill() {
+        const group = new THREE.Group();
+        // Đồi
+        const hill = new THREE.Mesh(
+          new THREE.ConeGeometry(4, 5, 32),
+          new THREE.MeshStandardMaterial({ color: 0x4a5d23, roughness: 0.8 }),
+        );
+        hill.position.y = 2.5;
+        group.add(hill);
+        // Hố bộc phá
+        const crater = new THREE.Mesh(
+          new THREE.SphereGeometry(1.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({
+            color: 0x2b1d14,
+            side: THREE.DoubleSide,
+          }),
+        );
+        crater.rotation.x = Math.PI;
+        crater.position.set(1.5, 4.5, 0);
+        group.add(crater);
+        return group;
+      }
+
+      function createDeCastries() {
+        const group = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0x3d4045,
+          metalness: 0.6,
+        });
+        // Đế
+        const base = new THREE.Mesh(new THREE.BoxGeometry(6, 1.5, 4), mat);
+        base.position.y = 0.75;
+        group.add(base);
+        // Mái vòm
+        const roof = new THREE.Mesh(
+          new THREE.CylinderGeometry(2, 2, 6, 32, 1, false, 0, Math.PI),
+          mat,
+        );
+        roof.rotation.z = Math.PI / 2;
+        roof.position.y = 1.5;
+        group.add(roof);
+        return group;
+      }
+
+      function createMuongPhang() {
+        const group = new THREE.Group();
+        // Lán
+        const hut = new THREE.Mesh(
+          new THREE.BoxGeometry(3, 2.5, 2.5),
+          new THREE.MeshStandardMaterial({ color: 0x5c4033 }),
+        );
+        hut.position.y = 1.25;
+        group.add(hut);
+        // Mái
+        const roof = new THREE.Mesh(
+          new THREE.ConeGeometry(2.5, 1.5, 4),
+          new THREE.MeshStandardMaterial({ color: 0x8b7355 }),
+        );
+        roof.rotation.y = Math.PI / 4;
+        roof.position.y = 3.25;
+        group.add(roof);
+        // Hầm
+        const tunnel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.6, 0.6, 3, 16),
+          new THREE.MeshStandardMaterial({ color: 0x222222 }),
+        );
+        tunnel.rotation.x = Math.PI / 2;
+        tunnel.position.set(0, 0.6, 2.5);
+        group.add(tunnel);
+        return group;
+      }
+
+      function createPanorama() {
+        const group = new THREE.Group();
+        const museum = new THREE.Mesh(
+          new THREE.CylinderGeometry(3.5, 3.5, 3.5, 32),
+          new THREE.MeshStandardMaterial({ color: 0x8b3a3a }),
+        );
+        museum.position.y = 1.75;
+        group.add(museum);
+        const dome = new THREE.Mesh(
+          new THREE.CylinderGeometry(3.2, 3.2, 0.5, 32),
+          new THREE.MeshStandardMaterial({ color: 0xdddddd }),
+        );
+        dome.position.y = 3.75;
+        group.add(dome);
+        return group;
+      }
+
+      function createCemetery() {
+        const group = new THREE.Group();
+        const base = new THREE.Mesh(
+          new THREE.BoxGeometry(6, 0.2, 6),
+          new THREE.MeshStandardMaterial({ color: 0x6e6e6e }),
+        );
+        base.position.y = 0.1;
+        group.add(base);
+
+        const graveMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
+        const graveGeo = new THREE.BoxGeometry(0.5, 0.8, 0.2);
+        for (let i = -1; i <= 1; i++) {
+          for (let j = -1.5; j <= 1.5; j += 1) {
+            const grave = new THREE.Mesh(graveGeo, graveMat);
+            grave.position.set(i * 1.5, 0.5, j * 1.2);
+            group.add(grave);
+          }
+        }
+        const mainMon = new THREE.Mesh(
+          new THREE.BoxGeometry(1.2, 2.5, 0.5),
+          graveMat,
+        );
+        mainMon.position.set(0, 1.25, -2.5);
+        group.add(mainMon);
+        return group;
+      }
+
+      // --- LOGIC DI CHUYỂN & TƯƠNG TÁC ---
 
       function onKeyDown(e) {
         if (!controls.isLocked) return;
@@ -555,12 +860,20 @@
 
       function onMouseDown() {
         if (!controls.isLocked) return;
-        const ray = new THREE.Raycaster();
-        ray.setFromCamera(new THREE.Vector2(), camera);
-        const hits = ray.intersectObjects(artifacts);
-        if (hits.length > 0) {
-          const id = hits[0].object.userData.id;
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(), camera);
+
+        // Bắn tia ray vào các hitbox tàng hình
+        const intersects = raycaster.intersectObjects(hitBoxes);
+        if (intersects.length > 0) {
+          const hitData = intersects[0].object.userData;
+          const id = hitData.id;
+
           visited.add(id);
+
+          // Đổi màu viền bục thành xanh lá để đánh dấu đã xem
+          hitData.baseMat.color.setHex(0x4ade80);
+
           updateUI();
           openPanel(id);
         }
@@ -571,10 +884,21 @@
         document.getElementById("quest-count").innerText = count;
         document.getElementById("progress-fill").style.width =
           (count / 5) * 100 + "%";
+
         if (count === 5) {
-          document.getElementById("quest-msg").innerText =
-            "Nhiệm vụ hoàn thành! Phim đã mở khóa.";
-          document.getElementById("quest-msg").style.color = "#4ade80";
+          setTimeout(() => {
+            const videoOverlay = document.getElementById("video-overlay");
+            const videoEl = document.getElementById("full-video");
+
+            videoOverlay.style.display = "block";
+            videoEl.muted = false;
+            videoEl.play();
+
+            videoEl.onended = () => {
+              videoOverlay.style.display = "none";
+              document.getElementById("end-screen").style.display = "flex";
+            };
+          }, 800);
         }
       }
 
@@ -589,20 +913,26 @@
         document.getElementById("info-panel").style.display = "block";
       }
 
+      // Hàm đóng Panel (Phơi ra dạng global để HTML gọi)
       window.closePanel = function () {
         document.getElementById("info-panel").style.display = "none";
-        if (visited.size === 5) {
-          document.getElementById("video-overlay").style.display = "block";
-          document.getElementById("full-video").play();
-        } else {
-          controls.lock(); // Tự động khóa lại để chơi tiếp
-        }
-      };
 
-      window.closeVideo = function () {
-        document.getElementById("full-video").pause();
-        document.getElementById("video-overlay").style.display = "none";
-        controls.lock();
+        if (visited.size === 5) {
+          // Bật video và ép xem
+          const videoOverlay = document.getElementById("video-overlay");
+          const videoEl = document.getElementById("full-video");
+
+          videoOverlay.style.display = "block";
+          videoEl.play().catch((e) => console.log("Lỗi autoplay video:", e));
+
+          // Sự kiện bắt buộc khi video kết thúc
+          videoEl.onended = () => {
+            videoOverlay.style.display = "none";
+            document.getElementById("end-screen").style.display = "flex";
+          };
+        } else {
+          controls.lock(); // Mở khóa chuột để đi tiếp
+        }
       };
 
       function onWindowResize() {
@@ -614,37 +944,118 @@
       function animate() {
         requestAnimationFrame(animate);
         const time = performance.now();
+
         if (controls.isLocked) {
           const delta = (time - prevTime) / 1000;
+
+          // Xử lý ma sát và gia tốc
           velocity.x -= velocity.x * 10.0 * delta;
           velocity.z -= velocity.z * 10.0 * delta;
+
           direction.z = Number(moveForward) - Number(moveBackward);
           direction.x = Number(moveRight) - Number(moveLeft);
           direction.normalize();
+
           if (moveForward || moveBackward)
-            velocity.z -= direction.z * 100.0 * delta;
-          if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+            velocity.z -= direction.z * 60.0 * delta; // Tốc độ đi bộ
+          if (moveLeft || moveRight) velocity.x -= direction.x * 60.0 * delta;
+
           controls.moveRight(-velocity.x * delta);
           controls.moveForward(-velocity.z * delta);
 
-          const ray = new THREE.Raycaster();
-          ray.setFromCamera(new THREE.Vector2(), camera);
-          const hits = ray.intersectObjects(artifacts);
+          // Phát hiện xem có đang nhìn vào hitbox nào không để hiện Hint
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(new THREE.Vector2(), camera);
+          const intersects = raycaster.intersectObjects(hitBoxes);
           document.getElementById("hint").style.display =
-            hits.length > 0 ? "block" : "none";
+            intersects.length > 0 ? "block" : "none";
         }
 
-        artifacts.forEach((art) => {
-          art.rotation.y += 0.01;
-          art.position.y = 2 + Math.sin(time / 500) * 0.1;
-          if (visited.has(art.userData.id)) {
-            art.parent.children[2].color.set(0x00ff00); // Chuyển sang xanh lá khi đã khám phá
-          }
+        // Xoay nhẹ các mô hình 3D trên bục
+        animatedModels.forEach((model) => {
+          model.rotation.y += 0.005;
         });
 
         prevTime = time;
         renderer.render(scene, camera);
       }
+      // ... existing code ...
+      // --- BẮT ĐẦU: LOGIC NÚT THOÁT VÀ MOBILE ---
+      const exitArtifactBtn = document.getElementById("exit-artifact-btn");
+      const mobileJoystick = document.getElementById("mobile-joystick");
+
+      // 1. Hàm hiển thị nút thoát (Bạn cần gọi hàm window.showExitButton() khi người chơi click vào hiện vật)
+      window.showExitButton = function () {
+        exitArtifactBtn.style.display = "block";
+      };
+
+      // 2. Xử lý sự kiện khi bấm nút Thoát
+      exitArtifactBtn.addEventListener("click", () => {
+        exitArtifactBtn.style.display = "none";
+        // TẠI ĐÂY: Thêm logic để ẩn giao diện xem hiện vật, mở khóa lại camera di chuyển
+        console.log("Đã thoát chế độ khám phá hiện vật");
+      });
+
+      // 3. Kiểm tra thiết bị Mobile và bật điều khiển cảm ứng
+      const isTouchDevice =
+        "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isTouchDevice) {
+        mobileJoystick.style.display = "block";
+
+        // Gắn sự kiện touch cho di chuyển (Liên kết với các biến di chuyển của bạn)
+        const setupTouch = (id, action) => {
+          const btn = document.getElementById(id);
+          btn.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            // TẠI ĐÂY: Bật biến di chuyển (Ví dụ: keys[action] = true;)
+          });
+          btn.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            // TẠI ĐÂY: Tắt biến di chuyển (Ví dụ: keys[action] = false;)
+          });
+        };
+
+        setupTouch("btn-up", "forward");
+        setupTouch("btn-down", "backward");
+        setupTouch("btn-left", "left");
+        setupTouch("btn-right", "right");
+
+        // 4. Vuốt màn hình để xoay Camera
+        let touchStartX = 0,
+          touchStartY = 0;
+        document.addEventListener(
+          "touchstart",
+          (e) => {
+            if (e.target.tagName !== "BUTTON") {
+              // Không xoay camera nếu đang bấm nút di chuyển
+              touchStartX = e.touches[0].clientX;
+              touchStartY = e.touches[0].clientY;
+            }
+          },
+          { passive: false },
+        );
+
+        document.addEventListener(
+          "touchmove",
+          (e) => {
+            if (e.target.tagName !== "BUTTON" && e.touches.length === 1) {
+              e.preventDefault(); // Tránh bị cuộn trang khi đang chơi
+              let deltaX = e.touches[0].clientX - touchStartX;
+              let deltaY = e.touches[0].clientY - touchStartY;
+
+              // TẠI ĐÂY: Kết nối deltaX/deltaY với hệ thống xoay camera của bạn
+              // Ví dụ: camera.rotation.y -= deltaX * 0.005;
+
+              touchStartX = e.touches[0].clientX;
+              touchStartY = e.touches[0].clientY;
+            }
+          },
+          { passive: false },
+        );
+      }
+
+      // --- KẾT THÚC: LOGIC NÚT THOÁT VÀ MOBILE ---
+      // ... existing code ...
     </script>
   </body>
 </html>

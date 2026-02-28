@@ -2,1243 +2,758 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no"
-    />
-    <title>THE LIVING HISTORY: BẠCH ĐẰNG 938 - MUSEUM EXPERIENCE</title>
-
-    <!-- FONTS -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&family=Roboto+Mono:wght@300&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- LIBRARIES (CDN High Availability) -->
-    <script
-      crossorigin
-      src="https://unpkg.com/react@18/umd/react.development.js"
-    ></script>
-    <script
-      crossorigin
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
-    ></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mô Phỏng Trận Bạch Đằng 938 & Các Di Tích</title>
+    <link rel="shortcut icon" href="../../favicon.svg" type="image/x-icon" />
     <style>
-      /* --- MODULE: CSS & UI DESIGN --- */
-      :root {
-        --museum-gold: #c5a059;
-        --museum-dark: #0b0d10;
-        --museum-glass: rgba(20, 25, 35, 0.85);
-        --text-main: #e0e0e0;
-        --hologram-cyan: #00f3ff;
-        --alert-red: #8a1c1c;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        user-select: none;
-      }
       body {
+        margin: 0;
         overflow: hidden;
-        background: #000;
-        font-family: "Playfair Display", serif;
-        color: var(--text-main);
+        background-color: #000;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
-
       #canvas-container {
-        position: absolute;
-        top: 0;
-        left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: 1;
+        display: block;
       }
-      #ui-root {
+      #ui-layer {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 10;
+        top: 20px;
+        left: 20px;
+        color: #fff;
         pointer-events: none;
-      }
-
-      /* UTILITIES */
-      .pointer-active {
-        pointer-events: auto !important;
-      }
-      .hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .fade-in {
-        animation: fadeIn 1s forwards;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      /* HUD ELEMENTS */
-      .crosshair {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 8px;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid var(--museum-gold);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: all 0.2s;
-        z-index: 20;
-      }
-      .crosshair.active {
-        width: 40px;
-        height: 40px;
-        background: transparent;
-        border: 2px solid var(--museum-gold);
-      }
-
-      .interaction-text {
-        position: absolute;
-        top: 55%;
-        left: 50%;
-        transform: translate(-50%, 0);
-        font-family: "Cinzel", serif;
-        font-size: 1.2rem;
-        color: var(--museum-gold);
-        text-shadow: 0 2px 10px black;
-        opacity: 0;
-        transition: opacity 0.3s;
         background: rgba(0, 0, 0, 0.6);
-        padding: 5px 15px;
-        border-radius: 4px;
-        border: 1px solid rgba(197, 160, 89, 0.3);
-      }
-      .interaction-text.visible {
-        opacity: 1;
-      }
-
-      /* MUSEUM PANELS */
-      .museum-panel {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 800px;
-        max-width: 90%;
-        background: var(--museum-glass);
-        border: 1px solid var(--museum-gold);
-        backdrop-filter: blur(15px);
-        padding: 3rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-        color: #fff;
-      }
-      .panel-title {
-        font-family: "Cinzel", serif;
-        font-size: 2.5rem;
-        color: var(--museum-gold);
-        text-align: center;
-        border-bottom: 1px solid #444;
-        padding-bottom: 1rem;
-      }
-      .panel-desc {
-        font-family: "Roboto Mono", monospace;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        color: #aaa;
-        text-align: justify;
-      }
-
-      .choice-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-      .choice-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #555;
-        color: #ddd;
-        padding: 1.5rem;
-        cursor: pointer;
-        font-family: "Cinzel", serif;
-        transition: all 0.3s;
-        text-align: center;
-      }
-      .choice-btn:hover {
-        background: rgba(197, 160, 89, 0.2);
-        border-color: var(--museum-gold);
-      }
-      .choice-btn.selected {
-        background: var(--museum-gold);
-        color: #000;
-        font-weight: bold;
-      }
-
-      .btn-action {
-        padding: 1rem 3rem;
-        background: transparent;
-        border: 2px solid var(--museum-gold);
-        color: var(--museum-gold);
-        font-family: "Cinzel", serif;
-        font-size: 1.2rem;
-        cursor: pointer;
-        align-self: center;
-        margin-top: 1rem;
-        transition: 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-      }
-      .btn-action:hover {
-        background: var(--museum-gold);
-        color: #000;
-        box-shadow: 0 0 30px var(--museum-gold);
-      }
-
-      /* CINEMATIC SUBTITLES */
-      .cinematic-sub {
-        position: absolute;
-        bottom: 15%;
-        width: 100%;
-        text-align: center;
-        font-family: "Cinzel", serif;
-        font-size: 2rem;
-        color: #fff;
-        text-shadow: 0 4px 20px #000;
-        pointer-events: none;
-        opacity: 0;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-        padding: 2rem 0;
-      }
-
-      /* CHAT UI */
-      .chat-overlay {
-        position: absolute;
-        bottom: 2rem;
-        right: 2rem;
-        width: 450px;
-        height: 600px;
-        background: rgba(10, 15, 20, 0.95);
-        border: 1px solid var(--hologram-cyan);
+        padding: 15px 25px;
         border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
-        transform: translateY(110%);
-        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
       }
-      .chat-overlay.active {
-        transform: translateY(0);
+      h1 {
+        margin: 0 0 10px 0;
+        font-size: 20px;
+        color: #ffaa55;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
-      .chat-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid rgba(0, 243, 255, 0.3);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        background: rgba(0, 243, 255, 0.05);
+      p {
+        margin: 5px 0;
+        font-size: 14px;
+        color: #ccc;
       }
-      .ngo-quyen-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: var(--hologram-cyan);
-        box-shadow: 0 0 15px var(--hologram-cyan);
-        position: relative;
-        overflow: hidden;
-      }
-      .chat-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-      .msg {
-        max-width: 85%;
-        padding: 1rem;
-        border-radius: 4px;
-        line-height: 1.5;
-        font-size: 0.95rem;
-      }
-      .msg.ai {
-        align-self: flex-start;
-        background: rgba(0, 243, 255, 0.1);
-        color: #d0ffff;
-        border-left: 3px solid var(--hologram-cyan);
-      }
-      .msg.user {
-        align-self: flex-end;
-        background: rgba(197, 160, 89, 0.15);
-        color: var(--museum-gold);
-        border-right: 3px solid var(--museum-gold);
-      }
-      .chat-input-area {
-        padding: 1.5rem;
-        border-top: 1px solid #333;
-        display: flex;
-        gap: 10px;
-      }
-      .chat-input {
-        flex: 1;
-        background: transparent;
-        border: 1px solid #555;
-        padding: 0.8rem;
-        color: #fff;
-        font-family: "Playfair Display", serif;
-      }
-      .chat-input:focus {
-        outline: none;
-        border-color: var(--hologram-cyan);
-      }
-
-      /* START SCREEN */
-      .start-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle at center, #1a202c 0%, #000 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-      }
-      .title-main {
-        font-family: "Cinzel", serif;
-        font-size: 4rem;
-        color: var(--museum-gold);
-        text-shadow: 0 0 20px rgba(197, 160, 89, 0.5);
-        letter-spacing: 5px;
-        margin-bottom: 2rem;
-        text-align: center;
+      .instruction {
+        margin-top: 15px;
+        font-size: 12px;
+        color: #88ccff;
+        font-style: italic;
       }
     </style>
+    <!-- Khai báo Import Map cho Three.js ES Modules -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
+    <div id="ui-layer">
+      <h1>Trận Bạch Đằng (938)</h1>
+      <p id="status-text">Trạng thái: Nước đang lớn...</p>
+      <p class="instruction">
+        Chuột trái: Xoay | Chuột phải: Kéo (Pan) đến các di tích (Trục X) |
+        Cuộn: Zoom
+      </p>
+    </div>
+
     <div id="canvas-container"></div>
-    <div id="ui-root"></div>
 
-    <script type="text/babel">
-      /*******************************************************
-       * MODULE 1: PROCEDURAL ASSETS & AUDIO
-       *******************************************************/
+    <script type="module">
+      /**
+       * ==========================================
+       * TẬP TIN: bach-dang-938.js (ES Module)
+       * TÁC GIẢ: Senior Frontend Developer
+       * MÔ TẢ: Mô phỏng trận Bạch Đằng 938 & 5 Di Tích
+       * ==========================================
+       */
 
-      const AudioSys = {
-        ctx: null,
-        init: function () {
-          window.AudioContext =
-            window.AudioContext || window.webkitAudioContext;
-          this.ctx = new AudioContext();
-        },
-        playDrone: function () {
-          if (!this.ctx) return;
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(50, this.ctx.currentTime);
-          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start();
-        },
-        playWarDrums: function () {
-          if (!this.ctx) return;
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(
-            10,
-            this.ctx.currentTime + 0.5,
-          );
-          gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(
-            0.01,
-            this.ctx.currentTime + 0.5,
-          );
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start();
-          osc.stop(this.ctx.currentTime + 0.5);
-        },
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+      // --- BIẾN TOÀN CỤC ---
+      let scene, camera, renderer, controls, clock;
+
+      // I. BIẾN PHẦN 1: MÔ PHỎNG TRẬN CHIẾN
+      let bachDangRiverMesh;
+      let stakeFieldGroup, mainRiverStakesGroup, secondaryChannelStakesGroup;
+      let namHanFleetGroup, hoangThaoShipMesh;
+      let ngoQuyenFleetGroup, decoyBoatsGroup;
+
+      // Hệ thống hạt (Particles) cho nước bắn
+      let splashParticlesGroup;
+
+      // Cơ chế thủy triều & State Machine
+      let tideLevel = 0; // Mức nước hiện tại
+      let tideDirection = -1; // -1: rút, 1: dâng
+      const HIGH_TIDE_Y = 0;
+      const LOW_TIDE_Y = -6; // Nước rút xuống -6 để lộ cọc (cọc cao 8, base ở -6 -> đầu cọc ở +2)
+      let simulationTime = 0;
+      let simulationPhase = "HIGH_TIDE"; // 'HIGH_TIDE', 'EBB_TIDE', 'DESTRUCTION', 'RESET'
+
+      // II. BIẾN PHẦN 2: 5 DI TÍCH
+      let caoQuyStakeFieldGroup;
+      let bachDangGiangComplexGroup, ngoQuyenStatueMesh;
+      let ngoQuyenTempleMesh;
+      let museumStakeArtifactMesh;
+      let hangKenhCommunalHouseMesh;
+
+      // Cấu hình vật liệu tái sử dụng để tối ưu hiệu suất
+      const materials = {
+        wood: new THREE.MeshStandardMaterial({
+          color: 0x3e2723,
+          roughness: 0.9,
+          metalness: 0.1,
+        }),
+        darkWood: new THREE.MeshStandardMaterial({
+          color: 0x2d1a11,
+          roughness: 0.9,
+          metalness: 0.1,
+        }),
+        water: new THREE.MeshStandardMaterial({
+          color: 0x1a3a5a,
+          roughness: 0.2,
+          metalness: 0.8,
+          transparent: true,
+          opacity: 0.9,
+        }),
+        stone: new THREE.MeshStandardMaterial({
+          color: 0x78909c,
+          roughness: 0.8,
+          metalness: 0.2,
+        }),
+        redRoof: new THREE.MeshStandardMaterial({
+          color: 0x8e24aa,
+          roughness: 0.7,
+          metalness: 0.1,
+        }), // Tông đỏ gạch cổ
+        gold: new THREE.MeshStandardMaterial({
+          color: 0xffd700,
+          roughness: 0.4,
+          metalness: 0.8,
+        }),
       };
 
-      const TextureGen = {
-        createMarble: () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = 512;
-          canvas.height = 512;
-          const ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#1a1a1a";
-          ctx.fillRect(0, 0, 512, 512);
-          for (let i = 0; i < 5000; i++) {
-            ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
-            ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      /**
+       * Hàm khởi tạo chính
+       */
+      function initScene() {
+        const container = document.getElementById("canvas-container");
+
+        // 1. Setup Scene, Camera, Renderer
+        scene = new THREE.Scene();
+        // Tông màu sương mù hoàng hôn/bình minh mờ ảo
+        scene.background = new THREE.Color(0x887766);
+        scene.fog = new THREE.FogExp2(0x887766, 0.003);
+
+        camera = new THREE.PerspectiveCamera(
+          60,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          2000,
+        );
+        camera.position.set(0, 40, 60);
+
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: false,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Tối ưu cho màn hình retina
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // 2. Setup Controls
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Không cho lật dưới mặt đất
+        controls.target.set(0, 0, 0);
+
+        // 3. Setup Lighting
+        // Ánh sáng môi trường (Ambient)
+        const ambientLight = new THREE.AmbientLight(0x404050, 2.0); // Màu xanh dương tối
+        scene.add(ambientLight);
+
+        // Ánh sáng hướng (Directional) - Tượng trưng mặt trời hoàng hôn
+        const dirLight = new THREE.DirectionalLight(0xffaa55, 3.0);
+        dirLight.position.set(-50, 100, -50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        // Mở rộng vùng đổ bóng
+        const d = 150;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        scene.add(dirLight);
+
+        // 4. Khởi tạo các thành phần
+        createBattleSimulation();
+        createHistoricalSites();
+
+        // 5. Utilities
+        clock = new THREE.Clock();
+        window.addEventListener("resize", onWindowResize);
+
+        // 6. Start Loop
+        animate();
+      }
+
+      /**
+       * TẠO CHỮ 3D ĐƠN GIẢN (Bằng Canvas Texture để đảm bảo luôn chạy không cần load Font)
+       */
+      function createTextSprite(message, scale = 10) {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = 512;
+        canvas.height = 128;
+
+        context.fillStyle = "rgba(0, 0, 0, 0.5)";
+        context.roundRect(0, 0, canvas.width, canvas.height, 20);
+        context.fill();
+
+        context.font = "Bold 40px Arial";
+        context.fillStyle = "#ffaa55";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(message, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(scale, scale * 0.25, 1);
+
+        return sprite;
+      }
+
+      /**
+       * PHẦN 1: MÔ PHỎNG TRẬN CHIẾN
+       */
+      function createBattleSimulation() {
+        // 1. Dòng sông Bạch Đằng
+        // Dùng PlaneGeometry chia nhiều segment để tạo hiệu ứng sóng (vertex displacement)
+        const riverGeo = new THREE.PlaneGeometry(400, 400, 64, 64);
+        riverGeo.rotateX(-Math.PI / 2);
+        bachDangRiverMesh = new THREE.Mesh(riverGeo, materials.water);
+        bachDangRiverMesh.position.y = HIGH_TIDE_Y;
+        bachDangRiverMesh.receiveShadow = true;
+
+        // Lưu lại vị trí Y gốc của các đỉnh để tính toán sóng
+        const posAttr = bachDangRiverMesh.geometry.attributes.position;
+        bachDangRiverMesh.geometry.userData.originalY = [];
+        for (let i = 0; i < posAttr.count; i++) {
+          bachDangRiverMesh.geometry.userData.originalY.push(posAttr.getY(i));
+        }
+        scene.add(bachDangRiverMesh);
+
+        // Đáy sông (để hứng bóng)
+        const riverBedGeo = new THREE.PlaneGeometry(400, 400);
+        riverBedGeo.rotateX(-Math.PI / 2);
+        const riverBed = new THREE.Mesh(
+          riverBedGeo,
+          new THREE.MeshStandardMaterial({ color: 0x111111 }),
+        );
+        riverBed.position.y = LOW_TIDE_Y - 5;
+        riverBed.receiveShadow = true;
+        scene.add(riverBed);
+
+        // 2. Hệ thống cọc ngầm
+        stakeFieldGroup = new THREE.Group();
+        mainRiverStakesGroup = new THREE.Group();
+        secondaryChannelStakesGroup = new THREE.Group();
+
+        // Geometry cọc vát nhọn đầu
+        const stakeGeo = new THREE.CylinderGeometry(0, 0.6, 8, 5); // Đầu bán kính 0
+        // Đẩy tâm (pivot) của cọc xuống đáy để dễ đặt vị trí
+        stakeGeo.translate(0, 4, 0);
+
+        // Hàm tạo một cụm cọc
+        const createStakeCluster = (group, count, radius, centerX, centerZ) => {
+          for (let i = 0; i < count; i++) {
+            const stake = new THREE.Mesh(stakeGeo, materials.wood);
+            const r = Math.sqrt(Math.random()) * radius;
+            const theta = Math.random() * 2 * Math.PI;
+            stake.position.set(
+              centerX + r * Math.cos(theta),
+              LOW_TIDE_Y - 2, // Đóng sâu dưới lòng sông
+              centerZ + r * Math.sin(theta),
+            );
+            // Nghiêng nhẹ cho tự nhiên
+            stake.rotation.x = (Math.random() - 0.5) * 0.3;
+            stake.rotation.z = (Math.random() - 0.5) * 0.3;
+            stake.castShadow = true;
+            stake.receiveShadow = true;
+            group.add(stake);
           }
-          ctx.strokeStyle = "rgba(255,255,255,0.1)";
-          ctx.lineWidth = 3;
-          for (let i = 0; i < 5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(Math.random() * 512, 0);
-            ctx.bezierCurveTo(
-              Math.random() * 512,
-              256,
-              Math.random() * 512,
-              256,
-              Math.random() * 512,
-              512,
-            );
-            ctx.stroke();
+        };
+
+        // Trận địa chính ở cửa sông
+        createStakeCluster(mainRiverStakesGroup, 150, 40, 0, 0);
+        // Các lạch phụ hai bên
+        createStakeCluster(secondaryChannelStakesGroup, 50, 20, -40, 20);
+        createStakeCluster(secondaryChannelStakesGroup, 50, 20, 40, 20);
+
+        stakeFieldGroup.add(mainRiverStakesGroup);
+        stakeFieldGroup.add(secondaryChannelStakesGroup);
+        scene.add(stakeFieldGroup);
+
+        // 3. Thuyền chiến Nam Hán (Thuyền lớn)
+        namHanFleetGroup = new THREE.Group();
+
+        const createShip = (isLarge, colorMat) => {
+          const shipGroup = new THREE.Group();
+          // Thân thuyền
+          const hullGeo = new THREE.BoxGeometry(
+            isLarge ? 6 : 3,
+            isLarge ? 4 : 2,
+            isLarge ? 16 : 8,
+          );
+          // Vát đầu thuyền
+          const pos = hullGeo.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            if (pos.getZ(i) > 0) {
+              // Mũi thuyền
+              pos.setX(i, pos.getX(i) * 0.2);
+            }
           }
-          const tex = new THREE.CanvasTexture(canvas);
-          tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-          return tex;
-        },
-      };
+          hullGeo.computeVertexNormals();
+          const hull = new THREE.Mesh(hullGeo, colorMat);
+          hull.position.y = isLarge ? 2 : 1;
+          hull.castShadow = true;
+          shipGroup.add(hull);
 
-      /*******************************************************
-       * MODULE 2: SHADERS (GLSL)
-       *******************************************************/
-
-      const Shaders = {
-        Water: {
-          vertex: `
-                    uniform float time;
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        vec3 pos = position;
-                        float wave = sin(pos.x * 0.1 + time) * 0.5 + cos(pos.y * 0.1 + time * 0.8) * 0.5;
-                        pos.z += wave;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-                    }
-                `,
-          fragment: `
-                    uniform float time;
-                    uniform vec3 color;
-                    varying vec2 vUv;
-                    void main() {
-                        vec3 waterColor = color;
-                        float noise = sin(vUv.x * 10.0 + time) * cos(vUv.y * 10.0 + time);
-                        waterColor += noise * 0.05;
-                        float alpha = 0.8 + noise * 0.1;
-                        gl_FragColor = vec4(waterColor, alpha);
-                    }
-                `,
-        },
-        Hologram: {
-          vertex: `
-                    varying vec3 vNormal;
-                    varying vec3 vViewPosition;
-                    void main() {
-                        vNormal = normalize(normalMatrix * normal);
-                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                        vViewPosition = -mvPosition.xyz;
-                        gl_Position = projectionMatrix * mvPosition;
-                    }
-                `,
-          fragment: `
-                    uniform float time;
-                    uniform vec3 color;
-                    varying vec3 vNormal;
-                    varying vec3 vViewPosition;
-                    void main() {
-                        vec3 normal = normalize(vNormal);
-                        vec3 viewDir = normalize(vViewPosition);
-                        float dotProduct = 1.0 - dot(normal, viewDir);
-                        float rim = smoothstep(0.6, 1.0, dotProduct);
-                        float scan = sin(gl_FragCoord.y * 0.5 + time * 5.0) * 0.5 + 0.5;
-                        gl_FragColor = vec4(color, (rim + scan * 0.2) * 0.8);
-                    }
-                `,
-        },
-      };
-
-      /*******************************************************
-       * MODULE 3: GAME ENGINE (THREE.JS LOGIC)
-       *******************************************************/
-
-      class GameEngine {
-        constructor(setInteraction, setCinematicText, onPuzzleSolved) {
-          this.setInteraction = setInteraction;
-          this.setCinematicText = setCinematicText;
-          this.onPuzzleSolved = onPuzzleSolved;
-
-          this.scene = null;
-          this.camera = null;
-          this.renderer = null;
-          this.controls = null;
-
-          this.objects = [];
-          this.interactables = [];
-          this.cinematicObjects = { ships: [], stakes: [] };
-
-          this.clock = new THREE.Clock();
-          this.raycaster = new THREE.Raycaster();
-          this.mouse = new THREE.Vector2(0, 0);
-
-          // STATE: EXPLORE, UI_ACTIVE, CINEMATIC, DIALOGUE
-          this.state = "EXPLORE";
-        }
-
-        init() {
-          this.scene = new THREE.Scene();
-          this.scene.background = new THREE.Color(0x050505);
-          this.scene.fog = new THREE.FogExp2(0x050505, 0.02);
-
-          this.camera = new THREE.PerspectiveCamera(
-            60,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000,
+          // Cột buồm
+          const mastGeo = new THREE.CylinderGeometry(
+            0.2,
+            0.2,
+            isLarge ? 12 : 6,
           );
-          this.camera.position.set(0, 1.7, 10);
+          const mast = new THREE.Mesh(mastGeo, materials.wood);
+          mast.position.y = isLarge ? 8 : 4;
+          mast.castShadow = true;
+          shipGroup.add(mast);
 
-          this.renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true,
-          });
-          this.renderer.setSize(window.innerWidth, window.innerHeight);
-          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-          this.renderer.shadowMap.enabled = true;
-          this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-          document
-            .getElementById("canvas-container")
-            .appendChild(this.renderer.domElement);
-
-          const ambient = new THREE.AmbientLight(0xffffff, 0.1);
-          this.scene.add(ambient);
-
-          this.buildMuseum();
-          this.buildRiverScene();
-
-          this.controls = new THREE.PointerLockControls(
-            this.camera,
-            document.body,
+          // Buồm
+          const sailGeo = new THREE.PlaneGeometry(
+            isLarge ? 8 : 4,
+            isLarge ? 8 : 4,
           );
-          this.setupInputs();
-
-          this.animate();
-        }
-
-        buildMuseum() {
-          const marbleTex = TextureGen.createMarble();
-
-          const floorGeo = new THREE.PlaneGeometry(50, 50);
-          const floorMat = new THREE.MeshStandardMaterial({
-            map: marbleTex,
-            roughness: 0.1,
-            metalness: 0.1,
-          });
-          const floor = new THREE.Mesh(floorGeo, floorMat);
-          floor.rotation.x = -Math.PI / 2;
-          floor.receiveShadow = true;
-          this.scene.add(floor);
-
-          const wallMat = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            roughness: 0.8,
-          });
-          const walls = new THREE.Group();
-          const backWall = new THREE.Mesh(
-            new THREE.BoxGeometry(50, 20, 1),
-            wallMat,
-          );
-          backWall.position.set(0, 10, -25);
-          const leftWall = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 20, 50),
-            wallMat,
-          );
-          leftWall.position.set(-25, 10, 0);
-          const rightWall = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 20, 50),
-            wallMat,
-          );
-          rightWall.position.set(25, 10, 0);
-          walls.add(backWall, leftWall, rightWall);
-          this.scene.add(walls);
-
-          this.createArtifact(
-            "MAP_TABLE",
-            new THREE.Vector3(0, 0, -5),
-            "Sa Bàn Trận Địa",
-            "Nghiên cứu địa thế sông Bạch Đằng",
-          );
-
-          this.createArtifact(
-            "STAKE_CASE",
-            new THREE.Vector3(-10, 0, -10),
-            "Cọc Gỗ Bịt Sắt",
-            "Vũ khí bí mật dưới lòng sông",
-          );
-
-          this.createArtifact(
-            "SHIP_MODEL",
-            new THREE.Vector3(10, 0, -10),
-            "Thuyền Chiến Nam Hán",
-            "Phân tích điểm yếu của địch",
-          );
-
-          const ngoQuyenBase = new THREE.Mesh(
-            new THREE.CylinderGeometry(2, 2, 0.2, 32),
-            new THREE.MeshStandardMaterial({ color: 0x000 }),
-          );
-          ngoQuyenBase.position.set(0, 0, -20);
-          this.scene.add(ngoQuyenBase);
-        }
-
-        createArtifact(id, pos, label, desc) {
-          const pedestal = new THREE.Mesh(
-            new THREE.BoxGeometry(2, 1, 2),
-            new THREE.MeshStandardMaterial({ color: 0x111, roughness: 0.5 }),
-          );
-          pedestal.position.copy(pos);
-          pedestal.position.y = 0.5;
-          pedestal.castShadow = true;
-          pedestal.receiveShadow = true;
-          this.scene.add(pedestal);
-
-          const spot = new THREE.SpotLight(0xc5a059, 2);
-          spot.position.set(pos.x, 8, pos.z);
-          spot.target = pedestal;
-          spot.angle = 0.3;
-          spot.penumbra = 0.5;
-          spot.castShadow = true;
-          this.scene.add(spot);
-
-          let visual;
-          if (id === "MAP_TABLE") {
-            visual = new THREE.Mesh(
-              new THREE.BoxGeometry(1.8, 0.1, 1.8),
-              new THREE.MeshStandardMaterial({ color: 0x3a5f0b }),
-            );
-            visual.position.set(0, 0.55, 0);
-          } else if (id === "STAKE_CASE") {
-            visual = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8),
-              new THREE.MeshStandardMaterial({ color: 0x5c4033 }),
-            );
-            visual.position.set(0, 1.2, 0);
-          } else {
-            visual = new THREE.Mesh(
-              new THREE.BoxGeometry(1, 0.5, 2),
-              new THREE.MeshStandardMaterial({ color: 0x8a1c1c }),
-            );
-            visual.position.set(0, 1, 0);
-          }
-          pedestal.add(visual);
-
-          const hitbox = new THREE.Mesh(
-            new THREE.BoxGeometry(2.2, 2, 2.2),
-            new THREE.MeshBasicMaterial({ visible: false }),
-          );
-          hitbox.position.y = 0.5;
-          hitbox.userData = { id, label, isInteractable: true };
-          pedestal.add(hitbox);
-          this.interactables.push(hitbox);
-        }
-
-        buildRiverScene() {
-          const waterGeo = new THREE.PlaneGeometry(200, 200, 64, 64);
-          this.waterMat = new THREE.ShaderMaterial({
-            uniforms: {
-              time: { value: 0 },
-              color: { value: new THREE.Color(0x001133) },
-            },
-            vertexShader: Shaders.Water.vertex,
-            fragmentShader: Shaders.Water.fragment,
-            transparent: true,
-            opacity: 0,
-          });
-          const water = new THREE.Mesh(waterGeo, this.waterMat);
-          water.rotation.x = -Math.PI / 2;
-          water.position.y = -50;
-          this.scene.add(water);
-          this.cinematicObjects.water = water;
-
-          const holoGeo = new THREE.CylinderGeometry(0.5, 0.5, 2.5, 16);
-          this.holoMat = new THREE.ShaderMaterial({
-            uniforms: {
-              time: { value: 0 },
-              color: { value: new THREE.Color(0x00f3ff) },
-            },
-            vertexShader: Shaders.Hologram.vertex,
-            fragmentShader: Shaders.Hologram.fragment,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
+          const sailMat = new THREE.MeshStandardMaterial({
+            color: 0xaa2222,
             side: THREE.DoubleSide,
           });
-          this.ngoQuyen = new THREE.Mesh(holoGeo, this.holoMat);
-          this.ngoQuyen.position.set(0, -10, -20);
-          this.scene.add(this.ngoQuyen);
+          const sail = new THREE.Mesh(sailGeo, sailMat);
+          sail.position.y = isLarge ? 8 : 4;
+          sail.position.z = 1; // Hơi lệch lên mũi
+          sail.castShadow = true;
+          shipGroup.add(sail);
 
-          const talkHitbox = new THREE.Mesh(
-            new THREE.BoxGeometry(2, 4, 2),
-            new THREE.MeshBasicMaterial({ visible: false }),
+          return shipGroup;
+        };
+
+        hoangThaoShipMesh = createShip(true, materials.darkWood);
+        hoangThaoShipMesh.position.set(0, HIGH_TIDE_Y, -80);
+        // Lưu dữ liệu ban đầu để mô phỏng
+        hoangThaoShipMesh.userData = {
+          origY: HIGH_TIDE_Y,
+          phase: "sailing",
+        };
+        namHanFleetGroup.add(hoangThaoShipMesh);
+
+        // Thêm vài thuyền Nam Hán phụ
+        for (let i = 0; i < 4; i++) {
+          const ship = createShip(true, materials.darkWood);
+          ship.position.set(
+            (Math.random() - 0.5) * 40,
+            HIGH_TIDE_Y,
+            -100 - Math.random() * 30,
           );
-          talkHitbox.position.copy(this.ngoQuyen.position);
-          talkHitbox.userData = {
-            id: "NGO_QUYEN",
-            label: "Ngô Quyền",
-            isInteractable: false,
+          ship.userData = { origY: HIGH_TIDE_Y, phase: "sailing" };
+          namHanFleetGroup.add(ship);
+        }
+        scene.add(namHanFleetGroup);
+
+        // 4. Thuyền nhẹ quân Ngô Quyền
+        ngoQuyenFleetGroup = new THREE.Group();
+        decoyBoatsGroup = new THREE.Group();
+
+        for (let i = 0; i < 6; i++) {
+          const boat = createShip(false, materials.wood);
+          boat.position.set(
+            (Math.random() - 0.5) * 50,
+            HIGH_TIDE_Y,
+            20 + Math.random() * 20,
+          );
+          // Cắm cờ màu khác
+          boat.children[2].material.color.setHex(0xaaaaaa);
+          boat.rotation.y = Math.PI; // Xoay ngược lại giả vờ chạy
+          decoyBoatsGroup.add(boat);
+        }
+        ngoQuyenFleetGroup.add(decoyBoatsGroup);
+        scene.add(ngoQuyenFleetGroup);
+
+        // Khởi tạo Particle Group cho bọt nước khi chìm
+        splashParticlesGroup = new THREE.Group();
+        scene.add(splashParticlesGroup);
+      }
+
+      /**
+       * PHẦN 2: 5 DI TÍCH & HIỆN VẬT
+       * Đặt các cụm di tích dọc theo trục X: 150, 250, 350, 450, 550
+       */
+      function createHistoricalSites() {
+        // Cấu trúc nền chung cho các khu trưng bày
+        const createPedestal = (x, z, size, title) => {
+          const baseGeo = new THREE.BoxGeometry(size, 2, size);
+          const base = new THREE.Mesh(baseGeo, materials.stone);
+          base.position.set(x, -1, z);
+          base.receiveShadow = true;
+          base.castShadow = true;
+          scene.add(base);
+
+          const label = createTextSprite(title, size * 0.8);
+          label.position.set(x, 15, z);
+          scene.add(label);
+        };
+
+        // 1. Bãi cọc Cao Quỳ (Hải Phòng)
+        const x1 = 150;
+        createPedestal(x1, 0, 40, "1. Bãi cọc Cao Quỳ (Phát hiện 2019)");
+        caoQuyStakeFieldGroup = new THREE.Group();
+        const miniStakeGeo = new THREE.CylinderGeometry(0.3, 0.4, 4);
+        for (let i = 0; i < 30; i++) {
+          const st = new THREE.Mesh(miniStakeGeo, materials.wood);
+          st.position.set(
+            x1 + (Math.random() - 0.5) * 30,
+            1,
+            (Math.random() - 0.5) * 30,
+          );
+          st.rotation.x = (Math.random() - 0.5) * 0.5;
+          st.castShadow = true;
+          caoQuyStakeFieldGroup.add(st);
+        }
+        scene.add(caoQuyStakeFieldGroup);
+
+        // 2. Khu di tích Bạch Đằng Giang
+        const x2 = 250;
+        createPedestal(x2, 0, 40, "2. Bạch Đằng Giang (Tượng 3 danh tướng)");
+        bachDangGiangComplexGroup = new THREE.Group();
+        const statueGeo = new THREE.CapsuleGeometry(1.5, 6, 4, 8);
+
+        // Ngô Quyền (Giữa, cao hơn)
+        ngoQuyenStatueMesh = new THREE.Mesh(statueGeo, materials.stone);
+        ngoQuyenStatueMesh.position.set(x2, 4, 0);
+        ngoQuyenStatueMesh.scale.set(1.2, 1.2, 1.2);
+        ngoQuyenStatueMesh.castShadow = true;
+        bachDangGiangComplexGroup.add(ngoQuyenStatueMesh);
+
+        // Lê Hoàn & Trần Hưng Đạo
+        const stat2 = new THREE.Mesh(statueGeo, materials.stone);
+        stat2.position.set(x2 - 8, 3, 5);
+        stat2.castShadow = true;
+        bachDangGiangComplexGroup.add(stat2);
+
+        const stat3 = new THREE.Mesh(statueGeo, materials.stone);
+        stat3.position.set(x2 + 8, 3, 5);
+        stat3.castShadow = true;
+        bachDangGiangComplexGroup.add(stat3);
+
+        scene.add(bachDangGiangComplexGroup);
+
+        // 3. Đền thờ Ngô Quyền (Đường Lâm)
+        const x3 = 350;
+        createPedestal(x3, 0, 40, "3. Đền thờ Ngô Quyền (Đường Lâm)");
+        ngoQuyenTempleMesh = new THREE.Group();
+
+        // Thân đền
+        const templeBody = new THREE.Mesh(
+          new THREE.BoxGeometry(20, 8, 15),
+          materials.wood,
+        );
+        templeBody.position.set(x3, 4, 0);
+        templeBody.castShadow = true;
+        ngoQuyenTempleMesh.add(templeBody);
+
+        // Mái cong (dùng Pyramid)
+        const roofGeo = new THREE.ConeGeometry(16, 6, 4);
+        roofGeo.rotateY(Math.PI / 4); // Xoay cho khớp Box
+        const roof = new THREE.Mesh(roofGeo, materials.redRoof);
+        roof.position.set(x3, 11, 0);
+        roof.scale.set(1, 1, 0.7);
+        roof.castShadow = true;
+        ngoQuyenTempleMesh.add(roof);
+        scene.add(ngoQuyenTempleMesh);
+
+        // 4. Cọc gỗ trưng bày (Bảo tàng)
+        const x4 = 450;
+        createPedestal(x4, 0, 30, "4. Hiện vật Cọc gỗ (Bảo tàng QG)");
+        museumStakeArtifactMesh = new THREE.Group();
+
+        // Bệ kính
+        const glassBase = new THREE.Mesh(
+          new THREE.BoxGeometry(4, 2, 4),
+          materials.darkWood,
+        );
+        glassBase.position.set(x4, 1, 0);
+        museumStakeArtifactMesh.add(glassBase);
+
+        // Cọc gỗ
+        const artifactGeo = new THREE.CylinderGeometry(0.5, 0.8, 8);
+        const artifact = new THREE.Mesh(artifactGeo, materials.wood);
+        artifact.position.set(x4, 6, 0);
+        artifact.rotation.z = Math.PI / 6; // Đặt nghiêng trưng bày
+        artifact.castShadow = true;
+        museumStakeArtifactMesh.add(artifact);
+
+        // Đèn chiếu spotlight
+        const spotLight = new THREE.SpotLight(0xffffff, 5);
+        spotLight.position.set(x4, 15, 5);
+        spotLight.target = artifact;
+        spotLight.angle = Math.PI / 6;
+        scene.add(spotLight);
+
+        scene.add(museumStakeArtifactMesh);
+
+        // 5. Đình Hàng Kênh
+        const x5 = 550;
+        createPedestal(x5, 0, 50, "5. Đình Hàng Kênh (Hải Phòng)");
+        hangKenhCommunalHouseMesh = new THREE.Group();
+
+        // Sàn
+        const floor = new THREE.Mesh(
+          new THREE.BoxGeometry(30, 1, 20),
+          materials.wood,
+        );
+        floor.position.set(x5, 0.5, 0);
+        hangKenhCommunalHouseMesh.add(floor);
+
+        // Cột (Nhiều cột đặc trưng đình làng)
+        const colGeo = new THREE.CylinderGeometry(0.4, 0.4, 6);
+        for (let i = 0; i < 5; i++) {
+          for (let j = 0; j < 3; j++) {
+            const col = new THREE.Mesh(colGeo, materials.darkWood);
+            col.position.set(x5 - 12 + i * 6, 3.5, -8 + j * 8);
+            col.castShadow = true;
+            hangKenhCommunalHouseMesh.add(col);
+          }
+        }
+
+        // Mái đình lớn
+        const bRoofGeo = new THREE.BoxGeometry(34, 4, 24);
+        const bRoof = new THREE.Mesh(bRoofGeo, materials.redRoof);
+        bRoof.position.set(x5, 8, 0);
+        bRoof.castShadow = true;
+        hangKenhCommunalHouseMesh.add(bRoof);
+
+        scene.add(hangKenhCommunalHouseMesh);
+      }
+
+      /**
+       * Hàm sinh hạt nước bắn (Hiệu ứng chiến thắng/thuyền chìm)
+       */
+      function createSplash(x, z) {
+        const particleCount = 20;
+        const pGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const pMat = new THREE.MeshBasicMaterial({ color: 0xccffff });
+
+        for (let i = 0; i < particleCount; i++) {
+          const mesh = new THREE.Mesh(pGeo, pMat);
+          mesh.position.set(
+            x + (Math.random() - 0.5) * 5,
+            tideLevel,
+            z + (Math.random() - 0.5) * 5,
+          );
+          mesh.userData = {
+            vY: Math.random() * 5 + 5, // Vận tốc nảy lên
+            vX: (Math.random() - 0.5) * 5,
+            vZ: (Math.random() - 0.5) * 5,
+            life: 1.0,
           };
-          this.ngoQuyen.add(talkHitbox);
-          this.interactables.push(talkHitbox);
+          splashParticlesGroup.add(mesh);
         }
+      }
 
-        setupInputs() {
-          this.keys = { w: false, a: false, s: false, d: false };
-          document.addEventListener("keydown", (e) => this.onKey(e, true));
-          document.addEventListener("keyup", (e) => this.onKey(e, false));
+      /**
+       * CƠ CHẾ THỦY TRIỀU & LOGIC TRẬN CHIẾN (QUAN TRỌNG)
+       */
+      function updateTide(delta) {
+        simulationTime += delta;
+        const uiStatus = document.getElementById("status-text");
 
-          // IMPORTANT: Only lock if clicking on Canvas and state is EXPLORE
-          document.addEventListener("click", (e) => {
-            // Check if click target is inside UI elements
-            if (
-              e.target.closest(".museum-panel") ||
-              e.target.closest(".chat-overlay") ||
-              e.target.closest(".start-screen")
-            ) {
-              return;
-            }
-            if (this.state === "EXPLORE") {
-              this.controls.lock();
-            }
+        // 1. PHASE: HIGH TIDE (Nước lên, dụ địch)
+        if (simulationTime < 10) {
+          simulationPhase = "HIGH_TIDE";
+          uiStatus.innerText =
+            "Trạng thái: Nước lớn, che khuất bãi cọc. Thuyền Nam Hán tiến vào.";
+
+          // Nam Hán tiến vào
+          namHanFleetGroup.children.forEach((ship) => {
+            if (ship.position.z < -20) ship.position.z += delta * 5;
+          });
+
+          // Ngô Quyền giả vờ rút lui (tiến sâu vào bờ)
+          decoyBoatsGroup.children.forEach((boat) => {
+            if (boat.position.z < 80) boat.position.z += delta * 8;
           });
         }
+        // 2. PHASE: EBB TIDE (Nước rút)
+        else if (simulationTime >= 10 && simulationTime < 20) {
+          simulationPhase = "EBB_TIDE";
+          uiStatus.innerText =
+            "Trạng thái: Nước rút nhanh. Bãi cọc bắt đầu lộ diện!";
 
-        onKey(e, pressed) {
-          switch (e.code) {
-            case "KeyW":
-              this.keys.w = pressed;
-              break;
-            case "KeyA":
-              this.keys.a = pressed;
-              break;
-            case "KeyS":
-              this.keys.s = pressed;
-              break;
-            case "KeyD":
-              this.keys.d = pressed;
-              break;
-          }
-        }
+          // Giảm mức nước (Lerp)
+          tideLevel = THREE.MathUtils.lerp(tideLevel, LOW_TIDE_Y, delta * 0.5);
+          bachDangRiverMesh.position.y = tideLevel;
 
-        startCinematic() {
-          this.state = "CINEMATIC";
-          this.controls.unlock();
-          AudioSys.playWarDrums();
-
-          const tl = gsap.timeline();
-          tl.to(this.scene.fog, { density: 0.05, duration: 2 });
-          tl.to(
-            this.camera.position,
-            { y: 15, z: 20, duration: 3, ease: "power2.inOut" },
-            0,
-          );
-          tl.to(this.cinematicObjects.water.position, { y: 1, duration: 2 }, 1);
-          tl.call(
-            () =>
-              this.setCinematicText(
-                "Năm 938... Quân Nam Hán hùng hổ tiến vào cửa sông Bạch Đằng...",
-              ),
-            null,
-            2,
-          );
-          tl.call(() => this.spawnShips(), null, 3);
-          tl.call(
-            () =>
-              this.setCinematicText(
-                "Chúng cậy thuyền to, coi thường thế trận của ta...",
-              ),
-            null,
-            6,
-          );
-          tl.call(() => this.spawnStakes(), null, 9);
-          tl.call(
-            () => this.setCinematicText("NHƯNG CỌC GỖ ĐÃ ĐỢI SẴN!"),
-            null,
-            9.5,
-          );
-          tl.call(() => this.destroyShips(), null, 12);
-          tl.call(() => this.summonNgoQuyen(), null, 16);
-        }
-
-        spawnShips() {
-          const shipGeo = new THREE.BoxGeometry(3, 1.5, 6);
-          const shipMat = new THREE.MeshStandardMaterial({ color: 0x550000 });
-          for (let i = 0; i < 5; i++) {
-            const ship = new THREE.Mesh(shipGeo, shipMat);
-            ship.position.set(
-              (Math.random() - 0.5) * 40,
-              1,
-              -50 - Math.random() * 20,
-            );
-            this.scene.add(ship);
-            this.cinematicObjects.ships.push(ship);
-            gsap.to(ship.position, { z: -5, duration: 8, ease: "linear" });
-          }
-        }
-
-        spawnStakes() {
-          const stakeGeo = new THREE.ConeGeometry(0.5, 6, 8);
-          const stakeMat = new THREE.MeshStandardMaterial({ color: 0x3e2b22 });
-          for (let i = 0; i < 30; i++) {
-            const stake = new THREE.Mesh(stakeGeo, stakeMat);
-            stake.position.set(
-              (Math.random() - 0.5) * 50,
-              -5,
-              -20 + (Math.random() - 0.5) * 30,
-            );
-            this.scene.add(stake);
-            this.cinematicObjects.stakes.push(stake);
-            gsap.to(stake.position, {
-              y: 0,
-              duration: 0.5,
-              delay: Math.random(),
-            });
-          }
-        }
-
-        destroyShips() {
-          this.cinematicObjects.ships.forEach((ship, idx) => {
-            gsap.to(ship.rotation, {
-              x: 0.5,
-              z: 0.5,
-              duration: 2,
-              delay: idx * 0.5,
-            });
-            gsap.to(ship.position, {
-              y: -5,
-              duration: 4,
-              delay: 1 + idx * 0.5,
-            });
+          // Thuyền hạ theo nước
+          namHanFleetGroup.children.forEach((ship) => {
+            ship.position.y = tideLevel + ship.userData.origY;
           });
         }
+        // 3. PHASE: DESTRUCTION (Va cọc, chìm)
+        else if (simulationTime >= 20 && simulationTime < 35) {
+          if (simulationPhase !== "DESTRUCTION") {
+            simulationPhase = "DESTRUCTION";
+            // Đổi mục tiêu camera vào bãi cọc
+            controls.target.set(0, 0, -20);
+          }
+          uiStatus.innerText =
+            "Trạng thái: Chiến thắng! Thuyền Nam Hán mắc cọc và chìm.";
 
-        summonNgoQuyen() {
-          this.setCinematicText("");
-          this.ngoQuyen.position.set(0, 3, -10);
-          gsap.fromTo(
-            this.ngoQuyen.scale,
-            { x: 0, y: 0, z: 0 },
-            { x: 1, y: 1, z: 1, duration: 2 },
-          );
+          // Logic thuyền chìm
+          namHanFleetGroup.children.forEach((ship, index) => {
+            if (ship.userData.phase !== "sunk") {
+              // Rung lắc dữ dội
+              ship.rotation.z = Math.sin(simulationTime * 20 + index) * 0.2;
+              ship.rotation.x = Math.sin(simulationTime * 15 + index) * 0.1;
 
-          gsap.to(this.camera.position, {
-            x: 0,
-            y: 1.7,
-            z: 5,
-            duration: 3,
-            delay: 2,
-            onComplete: () => {
-              this.state = "DIALOGUE";
-              const nqHitbox = this.interactables.find(
-                (x) => x.userData.id === "NGO_QUYEN",
-              );
-              if (nqHitbox) nqHitbox.userData.isInteractable = true;
-              this.onPuzzleSolved("CINEMATIC_DONE");
-            },
-          });
-        }
+              // Chìm dần (Scale Y giảm hoặc Y tụt nhanh hơn nước)
+              ship.position.y -= delta * 2;
+              ship.rotation.x -= delta; // Nghiêng chúi mũi
 
-        animate() {
-          requestAnimationFrame(() => this.animate());
-          const delta = this.clock.getDelta();
-          const time = this.clock.getElapsedTime();
-
-          this.waterMat.uniforms.time.value = time;
-          this.holoMat.uniforms.time.value = time;
-
-          if (this.controls.isLocked) {
-            const speed = 10.0 * delta;
-            if (this.keys.w) this.controls.moveForward(speed);
-            if (this.keys.s) this.controls.moveForward(-speed);
-            if (this.keys.a) this.controls.moveRight(-speed);
-            if (this.keys.d) this.controls.moveRight(speed);
-
-            this.raycaster.setFromCamera(this.mouse, this.camera);
-            const intersects = this.raycaster.intersectObjects(
-              this.interactables,
-            );
-
-            if (intersects.length > 0) {
-              const target = intersects[0].object;
-              if (target.userData.isInteractable) {
-                this.setInteraction(target.userData);
+              if (Math.random() < 0.1) {
+                createSplash(ship.position.x, ship.position.z);
               }
-            } else {
-              this.setInteraction(null);
-            }
-          }
 
-          this.renderer.render(this.scene, this.camera);
-        }
-      }
-
-      /*******************************************************
-       * MODULE 4: REACT UI & GAME LOGIC STATE
-       *******************************************************/
-
-      const { useState, useEffect, useRef } = React;
-
-      const PUZZLE_DATA = {
-        MAP_TABLE: {
-          title: "ĐỊA LỢI - BẠCH ĐẰNG GIANG",
-          desc: "Sông Bạch Đằng cửa biển hiểm trở, nước triều lên xuống chênh lệch rất lớn. Để chiến thắng, ta phải chọn thời điểm nào?",
-          choices: [
-            { id: "wrong1", text: "Tấn công khi nước triều lên cao nhất" },
-            { id: "correct", text: "Mai phục, đợi nước triều rút mạnh" },
-            { id: "wrong2", text: "Đánh ban đêm để che mắt địch" },
-          ],
-        },
-        STAKE_CASE: {
-          title: "VŨ KHÍ - CỌC GỖ",
-          desc: "Thuyền địch to lớn, thuyền ta nhỏ bé. Cọc gỗ phải được bố trí thế nào để tiêu diệt chiến thuyền?",
-          choices: [
-            { id: "wrong1", text: "Cắm cọc lộ thiên để uy hiếp tinh thần" },
-            { id: "wrong2", text: "Dùng cọc tre vót nhọn tẩm độc" },
-            { id: "correct", text: "Cọc gỗ lim bịt sắt, cắm ngầm dưới nước" },
-          ],
-        },
-        SHIP_MODEL: {
-          title: "CHIẾN THUẬT - NHỬ ĐỊCH",
-          desc: "Hoằng Tháo là kẻ kiêu ngạo. Làm sao để dụ hắn vào sâu trong bãi cọc?",
-          choices: [
-            { id: "correct", text: "Dùng thuyền nhẹ khiêu chiến rồi giả thua" },
-            { id: "wrong1", text: "Tổng tấn công phủ đầu ngay cửa sông" },
-            { id: "wrong2", text: "Cố thủ trong thành, đợi địch mệt mỏi" },
-          ],
-        },
-      };
-
-      const NGO_QUYEN_BRAIN = [
-        {
-          keywords: ["xin chào", "chào", "hello"],
-          response:
-            "Ta là Ngô Quyền. Ngươi từ hậu thế đến đây, có điều gì muốn hỏi về trận chiến này?",
-        },
-        {
-          keywords: ["năm 938", "thời gian"],
-          response:
-            "Năm 938 là thời khắc định mệnh. Ta đã thề rằng: Giặc Nam Hán không tan, ta quyết không trở về.",
-        },
-        {
-          keywords: ["cọc", "gỗ"],
-          response:
-            "Rừng gỗ lim ngàn năm đã giúp ta dựng trận địa. Cọc gỗ đầu bịt sắt, cắm chéo ngược dòng nước, chính là mồ chôn thuyền giặc.",
-        },
-        {
-          keywords: ["kiều công tiễn", "phản bội"],
-          response:
-            "Kẻ bán nước cầu vinh Kiều Công Tiễn đáng tội chết vạn lần. Hắn mở cửa cho sói vào nhà, ta phải trừ khử trước khi đánh giặc ngoài.",
-        },
-        {
-          keywords: ["chiến thắng", "kết quả"],
-          response:
-            "Hoằng Tháo bỏ mạng, quân Nam Hán vỡ mật. Từ nay nước Nam ta tự chủ, chấm dứt ngàn năm Bắc thuộc.",
-        },
-        {
-          keywords: ["làm sao", "cách nào", "chiến thuật"],
-          response:
-            "Biết người biết ta. Ta biết Hoằng Tháo kiêu căng, lại không thạo thủy chiến. Lợi dụng thủy triều là kế sách trời cho.",
-        },
-      ];
-
-      function App() {
-        const [hasStarted, setHasStarted] = useState(false);
-        const [interaction, setInteraction] = useState(null);
-        const [activePuzzle, setActivePuzzle] = useState(null);
-        const [solvedCount, setSolvedCount] = useState(0);
-        const [cinematicText, setCinematicText] = useState("");
-        const [showChat, setShowChat] = useState(false);
-        const [chatMessages, setChatMessages] = useState([]);
-
-        const engineRef = useRef(null);
-
-        useEffect(() => {
-          engineRef.current = new GameEngine(
-            (data) => setInteraction(data),
-            (text) => setCinematicText(text),
-            (event) => handleGameEvent(event),
-          );
-          // Engine initialized on Start
-        }, []);
-
-        const startGame = () => {
-          AudioSys.init();
-          AudioSys.playDrone();
-          engineRef.current.init();
-          engineRef.current.controls.lock();
-          setHasStarted(true);
-        };
-
-        const handleGameEvent = (event) => {
-          if (event === "CINEMATIC_DONE") {
-            setChatMessages([
-              { sender: "ai", text: "Ta đã đợi ngươi ở đây..." },
-            ]);
-            setTimeout(() => setShowChat(true), 1000);
-          }
-        };
-
-        const handleInteract = () => {
-          if (!interaction) return;
-
-          if (interaction.id === "NGO_QUYEN") {
-            engineRef.current.controls.unlock();
-            engineRef.current.state = "UI_ACTIVE";
-            setShowChat(true);
-          } else if (PUZZLE_DATA[interaction.id]) {
-            engineRef.current.controls.unlock();
-            engineRef.current.state = "UI_ACTIVE";
-            setActivePuzzle(interaction.id);
-          }
-        };
-
-        useEffect(() => {
-          const handler = (e) => {
-            if (e.code === "KeyE") handleInteract();
-          };
-          window.addEventListener("keydown", handler);
-          return () => window.removeEventListener("keydown", handler);
-        }, [interaction]);
-
-        const solvePuzzle = (isCorrect) => {
-          if (isCorrect) {
-            const newCount = solvedCount + 1;
-            setSolvedCount(newCount);
-            setActivePuzzle(null);
-
-            // Reset state before locking
-            engineRef.current.state = "EXPLORE";
-            engineRef.current.controls.lock();
-
-            if (newCount === 3) {
-              setTimeout(() => {
-                engineRef.current.startCinematic();
-              }, 1000);
-            }
-          } else {
-            AudioSys.playWarDrums();
-            alert("Sai rồi! Lịch sử không thể viết lại như vậy.");
-          }
-        };
-
-        return (
-          <>
-            {!hasStarted && (
-              <div className="start-screen pointer-active">
-                <h1 className="title-main">THE LIVING HISTORY</h1>
-                <button className="btn-action" onClick={startGame}>
-                  BƯỚC VÀO LỊCH SỬ
-                </button>
-              </div>
-            )}
-
-            {hasStarted && (
-              <>
-                <div className={`crosshair ${interaction ? "active" : ""}`} />
-
-                <div
-                  className={`interaction-text ${interaction ? "visible" : ""}`}
-                >
-                  Nhấn [E] để{" "}
-                  {interaction?.id === "NGO_QUYEN"
-                    ? "Trò chuyện"
-                    : "Nghiên cứu"}
-                </div>
-
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 20,
-                    right: 20,
-                    textAlign: "right",
-                    fontFamily: "Cinzel",
-                    color: "#c5a059",
-                  }}
-                >
-                  <h2>NHIỆM VỤ</h2>
-                  <p>Kích hoạt ký ức lịch sử: {solvedCount}/3</p>
-                </div>
-
-                {activePuzzle && (
-                  <PuzzleModal
-                    data={PUZZLE_DATA[activePuzzle]}
-                    onSolve={solvePuzzle}
-                  />
-                )}
-
-                <div
-                  className={`cinematic-sub ${cinematicText ? "fade-in" : "hidden"}`}
-                >
-                  {cinematicText}
-                </div>
-
-                <ChatInterface
-                  visible={showChat}
-                  messages={chatMessages}
-                  setMessages={setChatMessages}
-                  onClose={() => {
-                    setShowChat(false);
-                    engineRef.current.state = "EXPLORE"; // Reset state
-                    engineRef.current.controls.lock();
-                  }}
-                />
-              </>
-            )}
-          </>
-        );
-      }
-
-      function PuzzleModal({ data, onSolve }) {
-        const [selected, setSelected] = useState(null);
-
-        const checkAnswer = (e) => {
-          e.stopPropagation(); // Stop click from reaching Three.js
-          if (!selected) return;
-          onSolve(selected === "correct");
-        };
-
-        return (
-          <div
-            className="museum-panel pointer-active"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h1 className="panel-title">{data.title}</h1>
-            <p className="panel-desc">{data.desc}</p>
-
-            <div className="choice-grid">
-              {data.choices.map((c) => (
-                <div
-                  key={c.id}
-                  className={`choice-btn ${selected === c.id ? "selected" : ""}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelected(c.id);
-                  }}
-                >
-                  {c.text}
-                </div>
-              ))}
-            </div>
-
-            <button className="btn-action" onClick={checkAnswer}>
-              XÁC NHẬN
-            </button>
-          </div>
-        );
-      }
-
-      function ChatInterface({ visible, messages, setMessages, onClose }) {
-        const [input, setInput] = useState("");
-        const bodyRef = useRef(null);
-
-        useEffect(() => {
-          if (bodyRef.current)
-            bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-        }, [messages]);
-
-        const handleSend = () => {
-          if (!input.trim()) return;
-
-          const userText = input;
-          setMessages((prev) => [...prev, { sender: "user", text: userText }]);
-          setInput("");
-
-          setTimeout(() => {
-            const lowerInput = userText.toLowerCase();
-            let response =
-              "Ta không hiểu ý ngươi. Hãy hỏi về trận chiến, cọc gỗ, hoặc giặc Nam Hán.";
-
-            for (let entry of NGO_QUYEN_BRAIN) {
-              if (entry.keywords.some((kw) => lowerInput.includes(kw))) {
-                response = entry.response;
-                break;
+              if (ship.position.y < LOW_TIDE_Y - 5) {
+                ship.userData.phase = "sunk";
               }
             }
-            setMessages((prev) => [...prev, { sender: "ai", text: response }]);
-          }, 800);
-        };
+          });
+        }
+        // 4. RESET LOOP
+        else if (simulationTime >= 35) {
+          simulationTime = 0;
+          tideLevel = HIGH_TIDE_Y;
+          bachDangRiverMesh.position.y = tideLevel;
 
-        return (
-          <div
-            className={`chat-overlay pointer-active ${visible ? "active" : ""}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="chat-header">
-              <div className="ngo-quyen-avatar"></div>
-              <div
-                style={{
-                  color: "#00f3ff",
-                  fontFamily: "Cinzel",
-                  fontWeight: "bold",
-                }}
-              >
-                NGÔ QUYỀN (KÝ ỨC)
-              </div>
-              <div
-                style={{ marginLeft: "auto", cursor: "pointer", color: "#fff" }}
-                onClick={onClose}
-              >
-                ✖
-              </div>
-            </div>
+          // Reset Thuyền Nam Hán
+          namHanFleetGroup.children.forEach((ship, index) => {
+            ship.userData.phase = "sailing";
+            ship.position.y = ship.userData.origY;
+            ship.position.z = -80 - index * 15;
+            ship.rotation.set(0, 0, 0);
+          });
 
-            <div className="chat-body" ref={bodyRef}>
-              {messages.map((m, i) => (
-                <div key={i} className={`msg ${m.sender}`}>
-                  {m.text}
-                </div>
-              ))}
-            </div>
+          // Reset Thuyền Ngô Quyền
+          let rIdx = 0;
+          decoyBoatsGroup.children.forEach((boat) => {
+            boat.position.z = 20 + rIdx * 10;
+            rIdx++;
+          });
 
-            <div className="chat-input-area">
-              <input
-                className="chat-input"
-                placeholder="Hỏi Ngô Quyền..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              />
-              <button
-                style={{
-                  background: "var(--museum-gold)",
-                  border: "none",
-                  padding: "0 1rem",
-                  cursor: "pointer",
-                }}
-                onClick={handleSend}
-              >
-                GỬI
-              </button>
-            </div>
-          </div>
-        );
+          // Reset Camera Target
+          controls.target.set(0, 0, 0);
+        }
+
+        // Cập nhật Particles (Bọt nước)
+        splashParticlesGroup.children.forEach((p) => {
+          p.position.x += p.userData.vX * delta;
+          p.position.y += p.userData.vY * delta;
+          p.position.z += p.userData.vZ * delta;
+          p.userData.vY -= 15 * delta; // Trọng lực
+          p.userData.life -= delta;
+
+          // Xoay nhẹ
+          p.rotation.x += delta * 5;
+          p.rotation.y += delta * 5;
+
+          // Ẩn/xóa khi hết life
+          if (p.userData.life <= 0) {
+            p.position.y = -999;
+          }
+        });
       }
 
-      const root = ReactDOM.createRoot(document.getElementById("ui-root"));
-      root.render(<App />);
+      /**
+       * Animation Loop hoàn chỉnh
+       */
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+        const time = clock.getElapsedTime();
+
+        // 1. Cập nhật Controls
+        controls.update();
+
+        // 2. Hiệu ứng gợn sóng cho mặt sông (Vertex Displacement)
+        if (bachDangRiverMesh) {
+          const positions = bachDangRiverMesh.geometry.attributes.position;
+          const origY = bachDangRiverMesh.geometry.userData.originalY;
+          for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
+            // Dùng Sine wave kết hợp x, z và thời gian
+            const wave =
+              Math.sin(x * 0.2 + time * 2) * 0.5 +
+              Math.sin(z * 0.1 + time) * 0.3;
+            positions.setY(i, origY[i] + wave);
+          }
+          positions.needsUpdate = true;
+        }
+
+        // 3. Chạy logic mô phỏng trận chiến (Thủy triều)
+        // Chỉ chạy mô phỏng khi camera đang nhìn ở khu vực chiến trận (X gần 0)
+        if (camera.position.x < 100) {
+          updateTide(delta);
+        }
+
+        // 4. Render
+        renderer.render(scene, camera);
+      }
+
+      /**
+       * Xử lý khi thay đổi kích thước cửa sổ
+       */
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      // --- Khởi chạy ứng dụng ---
+      initScene();
+
+      // Đảm bảo tuân thủ yêu cầu Export của ES Module
+      export { initScene };
     </script>
   </body>
 </html>

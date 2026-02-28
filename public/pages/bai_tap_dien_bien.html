@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Trắc nghiệm Lịch sử: Điện Biên Phủ</title>
+    <link rel="shortcut icon" href="../../favicon.svg" type="image/x-icon" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Be Vietnam Pro"', "sans-serif"],
+            },
+            colors: {
+              army: {
+                light: "#7e9a74",
+                DEFAULT: "#4b5e43",
+                dark: "#2d3a28",
+              },
+              accent: "#c0392b",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #f4f6f3;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow:
+          0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      }
+      .option-btn {
+        transition: all 0.2s ease-in-out;
+      }
+      .option-btn:active {
+        transform: scale(0.98);
+      }
+      /* Hide scrollbar for clean mobile view */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      /* Animations */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-slide-in {
+        animation: slideIn 0.4s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+    <!-- Header / Exit Button -->
+    <header
+      class="bg-army text-white p-4 shadow-md flex items-center justify-between z-20 shrink-0"
+    >
+      <button
+        onclick="exitArtifact()"
+        class="flex items-center gap-2 text-white/90 hover:text-white bg-white/10 px-3 py-2 rounded-lg transition-colors text-sm font-semibold"
+      >
+        <i class="fas fa-chevron-left"></i>
+        Thoát
+      </button>
+      <h1 class="text-base font-bold text-center flex-1 truncate px-2">
+        Chiến dịch Điện Biên Phủ
+      </h1>
+      <div class="w-16"></div>
+      <!-- Spacer for balance -->
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 relative overflow-y-auto pb-6">
+      <!-- Start Screen -->
+      <div
+        id="start-screen"
+        class="absolute inset-0 flex flex-col items-center justify-center p-6 animate-slide-in"
+      >
+        <div
+          class="w-24 h-24 bg-army rounded-full flex items-center justify-center text-white text-4xl mb-6 shadow-lg"
+        >
+          <i class="fas fa-flag"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-army-dark mb-2 text-center">
+          Khám Phá Hiện Vật
+        </h2>
+        <p class="text-center text-gray-600 mb-8 max-w-sm">
+          Thử thách 30 câu hỏi trắc nghiệm từ mức độ Nhận biết đến Vận dụng cao
+          về 56 ngày đêm lịch sử tại Điện Biên Phủ.
+        </p>
+        <button
+          onclick="startQuiz()"
+          class="w-full max-w-sm bg-accent text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 active:scale-95 transition-all flex justify-center items-center gap-2 text-lg"
+        >
+          Bắt đầu ngay <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- Quiz Screen -->
+      <div
+        id="quiz-screen"
+        class="hidden absolute inset-0 flex-col p-4 animate-slide-in"
+      >
+        <!-- Progress & Level Badge -->
+        <div class="mb-4">
+          <div class="flex justify-between items-end mb-2">
+            <span id="question-counter" class="text-sm font-bold text-gray-500"
+              >Câu 1/30</span
+            >
+            <span
+              id="level-badge"
+              class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wide border border-blue-200"
+            >
+              Nhận biết
+            </span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              id="progress-bar"
+              class="bg-army h-2.5 rounded-full transition-all duration-300"
+              style="width: 3.33%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Question Card -->
+        <div
+          class="glass-panel rounded-2xl p-5 mb-4 shadow-sm border border-gray-100"
+        >
+          <h3
+            id="question-text"
+            class="text-lg md:text-xl font-bold text-gray-800 leading-snug"
+          >
+            Nội dung câu hỏi sẽ hiển thị ở đây?
+          </h3>
+        </div>
+
+        <!-- Options -->
+        <div
+          id="options-container"
+          class="space-y-3 flex-1 overflow-y-auto pb-20"
+        >
+          <!-- Buttons injected via JS -->
+        </div>
+
+        <!-- Next Button (Hidden initially) -->
+        <div
+          id="next-btn-container"
+          class="hidden absolute bottom-6 left-4 right-4 z-10"
+        >
+          <button
+            onclick="nextQuestion()"
+            class="w-full bg-army text-white font-bold py-4 rounded-xl shadow-xl active:scale-95 transition-all text-lg flex justify-center items-center gap-2"
+          >
+            Tiếp tục <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- End Screen -->
+      <div
+        id="end-screen"
+        class="hidden absolute inset-0 flex-col items-center justify-center p-6 animate-slide-in"
+      >
+        <i
+          class="fas fa-medal text-6xl text-yellow-500 mb-4 drop-shadow-lg"
+        ></i>
+        <h2 class="text-3xl font-bold text-army-dark mb-2 text-center">
+          Hoàn thành!
+        </h2>
+        <p class="text-gray-600 mb-6 text-center">
+          Bạn đã kết thúc hành trình khám phá lịch sử Điện Biên Phủ.
+        </p>
+
+        <div
+          class="glass-panel rounded-2xl p-6 w-full max-w-sm flex flex-col items-center mb-8 border border-gray-200"
+        >
+          <span
+            class="text-sm font-semibold text-gray-500 uppercase tracking-wide"
+            >Điểm số của bạn</span
+          >
+          <div class="text-5xl font-extrabold text-army mt-2 mb-1">
+            <span id="score-display">0</span>/30
+          </div>
+          <p
+            id="score-message"
+            class="text-center font-medium mt-2 text-gray-700"
+          ></p>
+        </div>
+
+        <div class="flex gap-4 w-full max-w-sm">
+          <button
+            onclick="exitArtifact()"
+            class="flex-1 bg-gray-200 text-gray-800 font-bold py-4 rounded-xl active:scale-95 transition-all"
+          >
+            Thoát
+          </button>
+          <button
+            onclick="restartQuiz()"
+            class="flex-1 bg-army text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all"
+          >
+            Chơi lại
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Database of 30 questions grouped by levels
+      const quizData = [
+        // --- MỤC 1: NHẬN BIẾT (10 câu) ---
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Đợt 1 của chiến dịch Điện Biên Phủ diễn ra vào khoảng thời gian nào?",
+          options: [
+            "13/03 – 17/03/1954",
+            "30/03 – 30/04/1954",
+            "01/05 – 07/05/1954",
+            "07/05 – 10/05/1954",
+          ],
+          answer: 0,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Mục tiêu chính của đợt 1 chiến dịch là gì?",
+          options: [
+            "Chiếm hầm De Castries",
+            "Xóa sổ phân khu Bắc để mở đường",
+            "Đánh chiếm đồi A1",
+            "Làm tê liệt sân bay Mường Thanh",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Trận đánh mở màn chiến dịch Điện Biên Phủ là trận đánh vào cứ điểm nào?",
+          options: ["Đồi Độc Lập", "Bản Kéo", "Him Lam", "Đồi A1"],
+          answer: 2,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Anh hùng nào đã lấy thân mình lấp lỗ châu mai tại trận Him Lam?",
+          options: ["Bế Văn Đàn", "Phan Đình Giót", "Tô Vĩnh Diện", "Trần Can"],
+          answer: 1,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Đại tá Charles Piroth - chỉ huy pháo binh Pháp đã có hành động gì sau đợt 1?",
+          options: [
+            "Đầu hàng quân ta",
+            "Bỏ trốn khỏi Điện Biên Phủ",
+            "Tự sát bằng lựu đạn ngay trong hầm",
+            "Gọi thêm viện binh",
+          ],
+          answer: 2,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Đợt 2 của chiến dịch tập trung chủ yếu vào khu vực nào?",
+          options: [
+            "Phân khu Nam",
+            "Dãy đồi phía Đông",
+            "Sân bay Mường Thanh",
+            "Sở chỉ huy Mường Phăng",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Cứ điểm nào được xem là 'chìa khóa' của cả tập đoàn cứ điểm Điện Biên Phủ?",
+          options: ["Đồi A1", "Đồi C1", "Đồi D1", "Đồi E1"],
+          answer: 0,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Đợt 3 của chiến dịch (Tổng công kích) bắt đầu từ ngày nào?",
+          options: ["13/03/1954", "30/03/1954", "01/05/1954", "07/05/1954"],
+          answer: 2,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Tướng De Castries bị bắt sống vào thời gian nào?",
+          options: [
+            "15h00 ngày 06/05",
+            "20h30 ngày 06/05",
+            "15h00 ngày 07/05",
+            "17h30 ngày 07/05",
+          ],
+          answer: 3,
+        },
+        {
+          level: "Nhận biết",
+          levelClass: "bg-blue-100 text-blue-800 border-blue-200",
+          q: "Tượng đài Chiến thắng Điện Biên Phủ hiện nay được đặt ở đâu?",
+          options: ["Đồi A1", "Đồi D1", "Hầm De Castries", "Mường Phăng"],
+          answer: 1,
+        },
+
+        // --- MỤC 2: THÔNG HIỂU (8 câu) ---
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Vì sao Đại tá Charles Piroth lại chọn cách tự sát?",
+          options: [
+            "Bị thương nặng không thể qua khỏi",
+            "Bất lực trước sức mạnh pháo binh của quân đội Việt Nam",
+            "Bị cấp trên ép buộc",
+            "Sợ bị bắt làm tù binh",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Chiến thuật 'Vây lấn' trong đợt 2 được thực hiện chủ yếu bằng cách nào?",
+          options: [
+            "Đào hệ thống giao thông hào chằng chịt tiến sát lô cốt địch",
+            "Dùng máy bay ném bom",
+            "Thả dù quân đội phía sau lưng địch",
+            "Sử dụng xe tăng húc đổ tường rào",
+          ],
+          answer: 0,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Mục đích lớn nhất của việc đào hào 'ta và địch quá gần nhau' là gì?",
+          options: [
+            "Dễ dàng cướp lương thực của Pháp",
+            "Triệt tiêu ưu thế máy bay và pháo binh của Pháp do sợ bắn nhầm",
+            "Tránh mưa, gió rét của vùng Tây Bắc",
+            "Tiết kiệm đạn dược cho quân ta",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Vì sao quân ta phải đánh đi đánh lại đồi A1 tới 4 đợt mới dứt điểm được?",
+          options: [
+            "Do quân Pháp liên tục được tăng viện binh",
+            "Do hệ thống hầm ngầm của Pháp tại đây quá kiên cố",
+            "Do địa hình trơn trượt không thể leo lên",
+            "Do quân ta hết lương thực",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Kết quả kiểm soát các điểm cao ở đợt 2 đã gây ra hậu quả trực tiếp gì cho quân Pháp?",
+          options: [
+            "Pháp mất hoàn toàn xe tăng",
+            "Pháp hết nước uống",
+            "Sân bay Mường Thanh bị tê liệt hoàn toàn",
+            "De Castries xin hàng ngay lập tức",
+          ],
+          answer: 2,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Sở chỉ huy chiến dịch tại Mường Phăng có đặc điểm gì nổi bật?",
+          options: [
+            "Được xây bằng bê tông cốt thép",
+            "Nằm giữa cánh đồng Mường Thanh",
+            "Là hệ thống hầm xuyên núi rất thô sơ nhưng cực kỳ bí mật",
+            "Sử dụng công trình do Pháp xây lại",
+          ],
+          answer: 2,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Tiếng nổ của khối bộc phá 960kg tại đồi A1 đêm 06/05 có ý nghĩa gì?",
+          options: [
+            "Phá hủy toàn bộ lương thực địch",
+            "Làm sập hầm De Castries",
+            "Tiêu diệt tướng chỉ huy Pháp",
+            "Là hiệu lệnh tổng tấn công trên toàn mặt trận",
+          ],
+          answer: 3,
+        },
+        {
+          level: "Thông hiểu",
+          levelClass: "bg-green-100 text-green-800 border-green-200",
+          q: "Bảo tàng Chiến thắng lịch sử Điện Biên Phủ có điểm nhấn đặc biệt nào?",
+          options: [
+            "Bức tranh Panorama toàn cảnh lớn nhất thế giới về chiến dịch",
+            "Tượng đài lớn nhất Việt Nam",
+            "Xác máy bay khổng lồ nhất",
+            "Lá cờ Quyết chiến Quyết thắng bản gốc",
+          ],
+          answer: 0,
+        },
+
+        // --- MỤC 3: VẬN DỤNG (7 câu) ---
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Sự sụp đổ nhanh chóng (sau 5 ngày) của phân khu Bắc trong đợt 1 chứng tỏ điều gì?",
+          options: [
+            "Quân Pháp cố tình nhường lại khu vực này",
+            "Kế hoạch 'đánh nhanh thắng nhanh' ban đầu là chính xác",
+            "Sức mạnh hỏa lực pháo binh bất ngờ và sự dũng cảm vô song của quân ta",
+            "Pháp không có quân đồn trú ở đây",
+          ],
+          answer: 2,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Chiến thuật đào hầm ngầm đặt khối bộc phá 960kg ở đồi A1 thể hiện phẩm chất gì của bộ đội ta?",
+          options: [
+            "Khả năng kêu gọi quốc tế viện trợ",
+            "Sự sáng tạo, kiên trì và quyết tâm bẻ gãy hệ thống phòng ngự kiên cố",
+            "Kỹ năng đàm phán",
+            "Khả năng sử dụng vũ khí hạt nhân",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Hành động đầu hàng của quân Pháp chiều 07/05 là kết quả tất yếu của quá trình nào?",
+          options: [
+            "Pháp hết vũ khí để bắn",
+            "Bị bóp nghẹt không gian sinh tồn và tê liệt nguồn tiếp tế",
+            "Sự đàm phán thành công tại Hội nghị Geneva",
+            "De Castries bị bệnh",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Tại sao nói dãy đồi phía Đông lại có tính quyết định đến việc khống chế trung tâm Mường Thanh?",
+          options: [
+            "Vì đó là nơi trồng nhiều lương thực nhất",
+            "Vì địa thế cao, có tầm nhìn và hỏa lực bao trùm toàn bộ lòng chảo Mường Thanh",
+            "Vì có đường tàu hỏa chạy qua",
+            "Vì gần biên giới Lào",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Việc lựa chọn Mường Phăng (cách 25km) làm Sở chỉ huy phản ánh nguyên tắc gì trong nghệ thuật quân sự?",
+          options: [
+            "Tránh xa chiến tranh",
+            "Bảo đảm bí mật tuyệt đối, an toàn cho đầu não nhưng vẫn sát sao chỉ đạo",
+            "Không muốn đụng độ trực tiếp với lính Pháp",
+            "Dễ dàng rút lui về Hà Nội",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Tổ xung kích do đồng chí Tạ Quốc Luật chỉ huy có nhiệm vụ cốt lõi gì vào chiều 07/05?",
+          options: [
+            "Bảo vệ Sở chỉ huy",
+            "Bắt sống tướng De Castries và ban tham mưu Pháp",
+            "Cắm cờ trên đồi A1",
+            "Kích nổ hố bộc phá",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng",
+          levelClass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          q: "Việc 2 tiểu đoàn tinh nhuệ nhất của Pháp bị tiêu diệt ngay trong đợt 1 mang lại lợi ích gì cho quân ta?",
+          options: [
+            "Đập tan sự kiêu ngạo, giáng đòn tâm lý mạnh vào quân Pháp",
+            "Chiếm được toàn bộ kho lương thực",
+            "Pháp đầu hàng ngay lập tức",
+            "Lấy được xe tăng của địch",
+          ],
+          answer: 0,
+        },
+
+        // --- MỤC 4: VẬN DỤNG CAO (5 câu) ---
+        {
+          level: "Vận dụng cao",
+          levelClass: "bg-red-100 text-red-800 border-red-200",
+          q: "Nếu Pháp không bị tê liệt sân bay Mường Thanh trong đợt 2, cục diện chiến dịch có thể diễn biến theo hướng nào?",
+          options: [
+            "Pháp đầu hàng nhanh hơn",
+            "Pháp duy trì được cầu hàng không tiếp tế quân lực, lương thực, gây khó khăn kéo dài cho ta",
+            "Quân ta sẽ dùng trực thăng tấn công lại",
+            "Hội nghị Geneva sẽ bị hủy bỏ",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng cao",
+          levelClass: "bg-red-100 text-red-800 border-red-200",
+          q: "Sự phân chia chiến dịch thành 3 đợt rõ ràng phản ánh tư duy chiến lược nào của nghệ thuật quân sự Việt Nam?",
+          options: [
+            "Đánh thần tốc, giải quyết nhanh gọn",
+            "Bóc vỏ, đánh lấn từng bước để cô lập, suy yếu rồi mới tung đòn quyết định",
+            "Vườn không nhà trống",
+            "Phòng ngự phản công",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng cao",
+          levelClass: "bg-red-100 text-red-800 border-red-200",
+          q: "Trong bối cảnh công nghệ quân sự Pháp vượt trội, yếu tố then chốt nào giúp Việt Nam làm nên chiến thắng Điện Biên Phủ?",
+          options: [
+            "Sự hỗ trợ của không quân Liên Xô",
+            "Thời tiết cực đoan làm vũ khí Pháp hỏng hóc",
+            "Đường lối chiến tranh nhân dân, sự sáng tạo chiến thuật và ý chí quả cảm",
+            "Tài năng đàm phán ngoại giao xuất sắc",
+          ],
+          answer: 2,
+        },
+        {
+          level: "Vận dụng cao",
+          levelClass: "bg-red-100 text-red-800 border-red-200",
+          q: "Hình ảnh hầm ngầm A1 và hầm De Castries ngày nay để lại bài học gì sâu sắc nhất đối với thế hệ trẻ?",
+          options: [
+            "Bài học về kỹ thuật xây dựng bê tông",
+            "Khát vọng hòa bình và sự tri ân cái giá máu xương để đổi lấy độc lập tự do",
+            "Khuyến khích giới trẻ học tiếng Pháp",
+            "Tầm quan trọng của địa hình đồi núi",
+          ],
+          answer: 1,
+        },
+        {
+          level: "Vận dụng cao",
+          levelClass: "bg-red-100 text-red-800 border-red-200",
+          q: "Nhận định nào khái quát đúng nhất sự sụp đổ của Tập đoàn cứ điểm Điện Biên Phủ?",
+          options: [
+            "Là một sai lầm cá nhân của De Castries",
+            "Là tai nạn do thời tiết xấu",
+            "Là thất bại của vũ khí quy ước trước chiến tranh du kích",
+            "Sự phá sản hoàn toàn của sức mạnh thực dân trước sức mạnh của toàn dân tộc Việt Nam",
+          ],
+          answer: 3,
+        },
+      ];
+
+      let currentQuestionIndex = 0;
+      let score = 0;
+      let selectedOption = null;
+
+      // DOM Elements
+      const screens = {
+        start: document.getElementById("start-screen"),
+        quiz: document.getElementById("quiz-screen"),
+        end: document.getElementById("end-screen"),
+      };
+      const els = {
+        questionText: document.getElementById("question-text"),
+        optionsContainer: document.getElementById("options-container"),
+        counter: document.getElementById("question-counter"),
+        progress: document.getElementById("progress-bar"),
+        levelBadge: document.getElementById("level-badge"),
+        nextBtnContainer: document.getElementById("next-btn-container"),
+        scoreDisplay: document.getElementById("score-display"),
+        scoreMessage: document.getElementById("score-message"),
+      };
+
+      function switchScreen(screenName) {
+        Object.values(screens).forEach((screen) =>
+          screen.classList.add("hidden"),
+        );
+        screens[screenName].classList.remove("hidden");
+      }
+
+      function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        quizData.sort(() => Math.random() - 0.5); // Shuffle questions
+        switchScreen("quiz");
+        loadQuestion();
+      }
+
+      function loadQuestion() {
+        selectedOption = null;
+        els.nextBtnContainer.classList.add("hidden");
+
+        const currentQ = quizData[currentQuestionIndex];
+
+        // Update Header & Progress
+        els.counter.innerText = `Câu ${currentQuestionIndex + 1}/${quizData.length}`;
+        els.progress.style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+
+        // Update Level Badge
+        els.levelBadge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${currentQ.levelClass}`;
+        els.levelBadge.innerText = currentQ.level;
+
+        // Update Question Text
+        els.questionText.innerText = currentQ.q;
+
+        // Render Options
+        els.optionsContainer.innerHTML = "";
+        currentQ.options.forEach((opt, index) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "option-btn w-full text-left p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-army/50 hover:bg-army/5 text-gray-700 font-medium text-base md:text-lg flex items-center justify-between";
+
+          const textSpan = document.createElement("span");
+          textSpan.innerText = opt;
+          textSpan.className = "flex-1 pr-2";
+
+          const iconSpan = document.createElement("span");
+          iconSpan.className =
+            "icon-indicator w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 border-gray-300";
+
+          btn.appendChild(textSpan);
+          btn.appendChild(iconSpan);
+
+          btn.onclick = () => selectOption(index, btn);
+          els.optionsContainer.appendChild(btn);
+        });
+      }
+
+      function selectOption(selectedIndex, btnElement) {
+        if (selectedOption !== null) return; // Prevent double clicking
+
+        selectedOption = selectedIndex;
+        const currentQ = quizData[currentQuestionIndex];
+        const isCorrect = selectedIndex === currentQ.answer;
+
+        if (isCorrect) score++;
+
+        // Highlight answers
+        const allBtns = els.optionsContainer.children;
+        for (let i = 0; i < allBtns.length; i++) {
+          const btn = allBtns[i];
+          const icon = btn.querySelector(".icon-indicator");
+
+          btn.classList.remove("hover:border-army/50", "hover:bg-army/5");
+          btn.classList.add("opacity-70", "cursor-not-allowed");
+
+          if (i === currentQ.answer) {
+            // Correct answer style
+            btn.classList.remove("border-gray-200", "opacity-70");
+            btn.classList.add(
+              "border-green-500",
+              "bg-green-50",
+              "text-green-800",
+            );
+            icon.innerHTML =
+              '<i class="fas fa-check text-green-600 text-sm"></i>';
+            icon.classList.remove("border-gray-300");
+            icon.classList.add("border-green-500", "bg-green-100");
+          } else if (i === selectedIndex && !isCorrect) {
+            // Wrong selected answer style
+            btn.classList.remove("border-gray-200");
+            btn.classList.add("border-red-500", "bg-red-50", "text-red-800");
+            icon.innerHTML =
+              '<i class="fas fa-times text-red-600 text-sm"></i>';
+            icon.classList.remove("border-gray-300");
+            icon.classList.add("border-red-500", "bg-red-100");
+          }
+        }
+
+        // Show Next button
+        els.nextBtnContainer.classList.remove("hidden");
+
+        // Auto scroll slightly down to ensure next button is visible
+        els.optionsContainer.parentElement.scrollTop =
+          els.optionsContainer.parentElement.scrollHeight;
+      }
+
+      function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizData.length) {
+          // Add a small animation effect
+          els.questionText.parentElement.classList.remove("animate-slide-in");
+          void els.questionText.parentElement.offsetWidth; // trigger reflow
+          els.questionText.parentElement.classList.add("animate-slide-in");
+
+          loadQuestion();
+        } else {
+          finishQuiz();
+        }
+      }
+
+      function finishQuiz() {
+        switchScreen("end");
+
+        // Animate score counter
+        let currentScore = 0;
+        const targetScore = score;
+        const duration = 1000;
+        const interval = duration / (targetScore || 1);
+
+        const timer = setInterval(() => {
+          if (currentScore >= targetScore) {
+            clearInterval(timer);
+            els.scoreDisplay.innerText = targetScore;
+          } else {
+            currentScore++;
+            els.scoreDisplay.innerText = currentScore;
+          }
+        }, interval);
+
+        // Generate message
+        let msg = "";
+        const percent = score / quizData.length;
+        if (percent === 1)
+          msg = "Xuất sắc! Bạn là một chuyên gia lịch sử thực thụ.";
+        else if (percent >= 0.8)
+          msg = "Rất tuyệt! Bạn nắm kiến thức lịch sử rất vững.";
+        else if (percent >= 0.5)
+          msg = "Khá tốt! Bạn đã vượt qua bài thử thách.";
+        else msg = "Hãy tiếp tục khám phá hiện vật để hiểu sâu hơn nhé!";
+
+        els.scoreMessage.innerText = msg;
+      }
+
+      function restartQuiz() {
+        startQuiz();
+      }
+
+      function exitArtifact() {
+        // Functionality to exit the quiz/artifact exploring view.
+        // In a real app, this might be `window.history.back()` or a redirect.
+        const confirmExit = confirm(
+          "Bạn có chắc chắn muốn thoát khỏi khu trưng bày hiện vật?",
+        );
+        if (confirmExit) {
+          // Mock behavior for the standalone file
+          alert(
+            "Đã thoát khỏi trình duyệt hiện vật ảo. (Hành động này sẽ quay lại trang chính trong thực tế)",
+          );
+          window.location.href = "#";
+        }
+      }
+    </script>
+  </body>
+</html>
